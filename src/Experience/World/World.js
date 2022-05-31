@@ -6,7 +6,7 @@ import Environment from "./Environment";
 import Planet from "./Planet";
 import Astronaut from "./astronaut";
 import SoccerGame from "./SoccerGame";
-import RoomSet from "./roomSet";
+import RoomSet from "./RoomSet";
 import Logo from "./Logo";
 import ExplorerSet from "./ExplorerSet";
 
