@@ -19,16 +19,15 @@ export default class World {
     this.scene = this.experience.scene;
     this.time = this.experience.time;
     this.resources = this.experience.resources;
-    this.camIdlePosition = new THREE.Mesh();
-    this.camPosition = new THREE.Mesh();
-    this.camPositionLookAt = new THREE.Mesh();
-    this.camNewPosition = new THREE.Vector3();
-    this.camNewPositionLookAt = new THREE.Vector3();
-    this.camCurrentPosition = new THREE.Vector3();
-    this.camCurrentPositionLookAt = new THREE.Vector3();
-    this.origin = new THREE.Vector3(0, 0, 0);
     this.emptyVec3 = new THREE.Vector3();
     this.emptyCannonVec3 = new CANNON.Vec3();
+    this.origin = new THREE.Vector3(0, 0, 0);
+
+    // Player controls pre-setups
+    this.playerGroupXAxis = new THREE.Vector3();
+    this.playerGroupYAxis = new THREE.Vector3();
+    this.playerGroupZAxis = new THREE.Vector3();
+
     // spaceKeyDown is set to prevent jump multiple times when holding space key down
     this.spaceKeyDown = false;
 
@@ -42,11 +41,20 @@ export default class World {
     /**
      * Camera basic set up
      */
-    const invisibleCubeGeo = new THREE.BoxGeometry(1, 1, 1);
+    const invisibleCubeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     const invisibleCubeMaterial = new THREE.MeshBasicMaterial({
       transparent: true,
       opacity: 0,
     });
+    // Camera movement pre-setups
+    this.camIdlePosition = new THREE.Mesh();
+    this.camPosition = new THREE.Mesh();
+    this.camPositionLookAt = new THREE.Mesh();
+    this.camNewPosition = new THREE.Vector3();
+    this.camNewPositionLookAt = new THREE.Vector3();
+    this.camCurrentPosition = new THREE.Vector3();
+    this.camCurrentPositionLookAt = new THREE.Vector3();
+    // Camera pointers pre-setups
     this.camIdlePosition.geometry = invisibleCubeGeo;
     this.camIdlePosition.material = invisibleCubeMaterial;
     this.camPosition.geometry = invisibleCubeGeo;
@@ -57,8 +65,8 @@ export default class World {
     /**
      * Physics setup
      */
-    this.gForce = 0.01;
-    this.debugObejcts.gForceScale = 700;
+    this.gForce = 0.1;
+    this.debugObejcts.gForceScale = 90;
     this.physicsWorld = new CANNON.World();
     this.physicsWorld.allowSleep = true;
     this.physicsWorld.solver.iterations = 10;
@@ -67,15 +75,27 @@ export default class World {
 
     // Set physics contact materials
     this.defaultMaterial = new CANNON.Material("default");
+    this.astronautMaterial = new CANNON.Material("astronaut");
+    // Contact params between default and default
     this.defaultContactMaterial = new CANNON.ContactMaterial(
       this.defaultMaterial,
       this.defaultMaterial,
       {
-        friction: 1.5,
-        restitution: 0.3,
+        friction: 0.7,
+        restitution: 0.5,
+      }
+    );
+    // Contact params between astronaut and default
+    this.astronautDefaultContactMaterial = new CANNON.ContactMaterial(
+      this.astronautMaterial,
+      this.defaultMaterial,
+      {
+        friction: 2,
+        restitution: 0,
       }
     );
     this.physicsWorld.addContactMaterial(this.defaultContactMaterial);
+    this.physicsWorld.addContactMaterial(this.astronautDefaultContactMaterial);
 
     // Set physics debugger
     if (this.debug.active) {
@@ -107,6 +127,11 @@ export default class World {
       this.upAxis = new CANNON.Vec3(0, 1, 0);
       this.gravityDirection = new CANNON.Vec3();
 
+      // Astronaut setup
+      this.astronaut = new Astronaut();
+      this.astronautMesh = this.astronaut.model;
+      this.astronautGravityDirection = new CANNON.Vec3();
+
       /**
        * Logo Setups
        */
@@ -114,29 +139,23 @@ export default class World {
       this.logoSet = new Logo();
       this.logoMesh = this.logoSet.logoModel;
       this.logoFixedPosition = new THREE.Vector3(0, 0, 18);
+      this.logoMeshSpherical = new THREE.Spherical();
 
-      // Planet setup
-      this.planet = new Planet(this.defaultContactMaterial, this.physicsWorld);
-      this.moonMesh = this.planet.moonMesh;
+      /**
+       *  Planet Setups
+       */
+      this.planet = new Planet(this.defaultMaterial, this.physicsWorld);
+      this.planetBody = this.planet.planetBody;
       this.planetRadius = this.planet.planetRadius;
 
       // Moon setup
-      this.moonRadius = this.moonMesh.geometry.parameters.radius;
-      this.moonGravityDirection = new CANNON.Vec3();
-      this.moonInitialVelocity = 25;
-      this.moonDistance = 150;
-
-      // Astronaut setup
-      this.astronaut = new Astronaut();
-      this.astronautMesh = this.astronaut.model;
-      this.astronautBodySize = new CANNON.Vec3(0.75, 1, 0.75);
-      this.astronautGravityDirection = new CANNON.Vec3();
+      this.moonBody = this.planet.moonBody;
 
       /**
        *  Soccer game Setups
        */
       this.soccerGame = new SoccerGame(
-        this.defaultContactMaterial,
+        this.defaultMaterial,
         this.physicsWorld,
         this.applyRotation
       );
@@ -157,7 +176,7 @@ export default class World {
        *  Room Setups
        */
       this.roomSet = new RoomSet(
-        this.defaultContactMaterial,
+        this.defaultMaterial,
         this.physicsWorld,
         this.applyRotation
       );
@@ -202,6 +221,11 @@ export default class World {
 
       // Shelf setups
       this.shelfBody = this.roomSet.shelfBody;
+      this.shelfModel = this.roomSet.shelfGroup;
+      this.shelfBodySpherical = new THREE.Spherical();
+      this.shelfXAxis = new THREE.Vector3();
+      this.shelfYAxis = new THREE.Vector3();
+      this.shelfZAxis = new THREE.Vector3();
 
       // Lego car setups
       this.legoBody = this.roomSet.legoBody;
@@ -210,12 +234,16 @@ export default class World {
        *  Explorer Setups
        */
       this.explorerSet = new ExplorerSet(
-        this.defaultContactMaterial,
+        this.defaultMaterial,
         this.physicsWorld
       );
 
       // Moon rover setups
       this.moonRoverBody = this.explorerSet.moonRoverBody;
+      this.wheelLFBody = this.explorerSet.wheelLFBody;
+      this.wheelRFBody = this.explorerSet.wheelRFBody;
+      this.wheelLBBody = this.explorerSet.wheelLBBody;
+      this.wheelRBBody = this.explorerSet.wheelRBBody;
 
       // Moon lander setups
       this.moonLanderBody = this.explorerSet.moonLanderBody;
@@ -225,16 +253,59 @@ export default class World {
 
       // UFO setups
       this.ufoBody = this.explorerSet.ufoBody;
+      this.ufoBodySpherical = new THREE.Spherical();
 
-      this.setPlanetPhysics();
-      this.setMoonPhysics();
+      /**
+       * Indicator Setups
+       */
+      this.indicatorModel = this.resources.items.indicatorModel.scene;
+      this.indicatorMaterial = new THREE.MeshBasicMaterial({
+        color: "skyblue",
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.5,
+      });
+      this.indicatorModel.children[0].material = this.indicatorMaterial;
+
+      // Logo indicator setups
+      this.logoIndicator = this.indicatorModel.clone();
+      this.logoIndicator.children[0].scale.set(4, 4, 0.5);
+      // UFO indicator setups
+      this.ufoIndicator = this.indicatorModel.clone();
+      this.ufoIndicator.children[0].scale.set(4, 4, 0.5);
+      // Projects shelf indicator setups
+      this.projectsIndicator = this.indicatorModel.clone();
+      this.projectsIndicator.children[0].scale.set(3.5, 3.5, 0.5);
+
+      this.scene.add(
+        this.logoIndicator,
+        this.ufoIndicator,
+        this.projectsIndicator
+      );
+
+      this.updateLogoIndicator();
       this.setAstronautPhysics();
       this.setPlayerControls();
       this.setIdleAnimationTimer();
       this.setCamera();
+      this.setFog()
     });
+  }
 
-    this.setBoarderPhysics();
+  /**
+   * Update logo indicator to logo position
+   */
+  updateLogoIndicator() {
+    this.logoMeshSpherical.setFromVector3(this.logoMesh.position);
+    this.logoIndicator.position.copy(
+      this.emptyVec3.setFromSphericalCoords(
+        this.planetRadius + 0.3,
+        this.logoMeshSpherical.phi,
+        this.logoMeshSpherical.theta
+      )
+    );
+    // Upright the logo indicator
+    this.logoIndicator.lookAt(this.origin);
   }
 
   /**
@@ -243,8 +314,9 @@ export default class World {
   applyGForce(gForceDirection, bodyPosition, bodyForce, bodyMass) {
     gForceDirection.set(-bodyPosition.x, -bodyPosition.y, -bodyPosition.z);
     gForceDirection.normalize();
-    bodyForce = gForceDirection.scale(
-      this.debugObejcts.gForceScale * this.gForce
+    gForceDirection.scale(
+      this.debugObejcts.gForceScale * this.gForce,
+      bodyForce
     );
     bodyForce.y += bodyMass * this.gForce;
     return bodyForce;
@@ -267,74 +339,28 @@ export default class World {
   }
 
   /**
-   * Basic physics setup (cannon-es) for all components
+   * Astronaut physics setup
    */
-  // Create invisible outside boarders
-  setBoarderPhysics() {
-    const boarderShape1 = new CANNON.Box(new CANNON.Vec3(150, 0, 150));
-    const boarderShape2 = new CANNON.Box(new CANNON.Vec3(150, 150, 0));
-    const boarderShape3 = new CANNON.Box(new CANNON.Vec3(0, 150, 150));
-
-    const boarderBody = new CANNON.Body({ mass: 0 });
-
-    boarderBody.addShape(boarderShape1, new CANNON.Vec3(0, 150, 0));
-    boarderBody.addShape(boarderShape1, new CANNON.Vec3(0, -150, 0));
-    boarderBody.addShape(boarderShape2, new CANNON.Vec3(0, 0, 150));
-    boarderBody.addShape(boarderShape2, new CANNON.Vec3(0, 0, -150));
-    boarderBody.addShape(boarderShape3, new CANNON.Vec3(150, 0, 0));
-    boarderBody.addShape(boarderShape3, new CANNON.Vec3(-150, 0, 0));
-
-    this.physicsWorld.addBody(boarderBody);
-  }
-
-  // Main planet physics setup
-  setPlanetPhysics() {
-    const planetShape = new CANNON.Sphere(this.planetRadius);
-    const planetLandShape = new CANNON.Cylinder(7, 5, 3);
-
-    this.planetBody = new CANNON.Body({
-      shape: planetShape,
-      material: this.defaultMaterial,
-    });
-    this.planetBody.addShape(planetLandShape, new CANNON.Vec3(0, -14.3, 0));
-    this.physicsWorld.addBody(this.planetBody);
-  }
-
-  // Moon physics setup
-  setMoonPhysics() {
-    const moonShape = new CANNON.Sphere(this.moonRadius);
-    this.moonBody = new CANNON.Body({
-      mass: 1,
-      shape: moonShape,
-      material: this.defaultMaterial,
-    });
-    this.moonBody.position.set(this.moonDistance, 0, this.moonDistance);
-    this.physicsWorld.addBody(this.moonBody);
-    // Apply initial velocity
-    this.moonBody.velocity = new CANNON.Vec3(0, this.moonInitialVelocity, 0);
-  }
-
-  // Astronaut physics setup
   setAstronautPhysics() {
-    const astronautShape = new CANNON.Box(this.astronautBodySize);
+    const astronautShape = new CANNON.Box(new CANNON.Vec3(0.75, 1, 0.75));
     const supportShape = new CANNON.Sphere(0.7);
 
     this.astronautBody = new CANNON.Body({
       mass: 1,
-      position: new CANNON.Vec3(0, this.planetRadius + 1.5, 0),
-      material: this.defaultContactMaterial,
+      material: this.astronautMaterial,
     });
     this.astronautBody.addShape(astronautShape);
     this.astronautBody.addShape(supportShape, new CANNON.Vec3(0, -0.7, 0));
     this.astronautBody.addShape(supportShape);
     this.astronautBody.addShape(supportShape, new CANNON.Vec3(0, 0.7, 0));
+    this.astronautBody.position.set(0, this.planetRadius + 1.5, 0);
     this.astronautBody.allowSleep = false;
     this.physicsWorld.addBody(this.astronautBody);
     this.astronautCollide = false;
     this.contactNormal = new CANNON.Vec3();
 
     // Lock character from free rolling
-    // this.astronautBody.angularDamping = 0.9;
+    this.astronautBody.angularDamping = 1;
 
     // Detact if astronuat collide
     this.astronautBody.addEventListener("collide", (e) => {
@@ -346,10 +372,10 @@ export default class World {
         this.contactNormal.copy(e.contact.ni);
       }
       // If contactNormal.dot(upAxis) is between 0 and 1, we know that the contact normal is somewhat in the up direction.
-      if (this.contactNormal.dot(this.upAxis) > 0.5)
+      if (this.contactNormal.dot(this.upAxis) > 0.5) {
         // Use a "good" threshold value between 0 and 1 here!
         this.astronautCollide = true;
-
+      }
       // if the collide body is soccer ball
       if (e.contact.bi.id == this.soccerBallBody.id) {
         // When current soccer velocity is larger than current astronaut velocity,
@@ -359,7 +385,8 @@ export default class World {
           this.astronautBody.velocity.lengthSquared()
         ) {
           this.astronaut.animation.play("run");
-          this.soccerBallBody.velocity = this.soccerBallBody.velocity.scale(-1);
+          this.soccerBallBody.velocity =
+            this.soccerBallBody.velocity.scale(-1.5);
         }
       }
     });
@@ -370,15 +397,24 @@ export default class World {
    */
   setPlayerControls() {
     // setup
-    this.forwardAxis = new THREE.Vector3(-1, 0, 0);
+    this.forwardAxis = new THREE.Vector3(1, 0, 0);
     this.turnAxis = new THREE.Vector3(0, 1, 0);
+    this.upRightAxis = new THREE.Vector3(0, 0, 1);
+    this.oldPlayerPosition = new THREE.Vector3(0, 1, 0);
+    this.newPlayerPosition = new THREE.Vector3();
+    this.upRightAngle = 0;
+    this.frontRightAngle = 0;
+    this.angleBetweenPositions = 0;
     this.playerGroup = new THREE.Object3D();
     this.astronautBodySpherical = new THREE.Spherical();
 
     // control properties
     this.walkRad = 0.004;
-    this.heightLimit = 17;
     this.jumpHeight = new CANNON.Vec3(0, 4, 0);
+    this.walkVelocity = new CANNON.Vec3(0, 0, 3.5);
+    this.walkVelocityAndDir = new THREE.Vector3(0, 0, 0);
+    this.backVelocityAndDir = new THREE.Vector3(0, 0, 0);
+    this.jumpVelocityAndDir = new THREE.Vector3(0, 0, 0);
 
     // setup player control plate, also as the astronaut shadow
     this.playerPlate = new THREE.Mesh(
@@ -472,6 +508,16 @@ export default class World {
   }
 
   /**
+   * Set up space fog
+   */
+  setFog(){
+    const color = 0x333;
+    const near = 50;
+    const far = 500;
+    this.scene.fog = new THREE.Fog(color, near, far);
+  }
+
+  /**
    * Animation setup
    */
   update() {
@@ -491,14 +537,10 @@ export default class World {
     // Dust mesh update
     if (this.planet) {
       this.planet.update();
-    }
 
-    // Update moon physics
-    if (this.moonBody) {
-      this.moonMesh.position.copy(this.moonBody.position);
-      this.moonMesh.quaternion.copy(this.moonBody.quaternion);
+      // Apply center gravity to moon
       this.moonBody.force = this.applyGForce(
-        this.moonGravityDirection,
+        this.gravityDirection,
         this.moonBody.position,
         this.moonBody.force,
         this.moonBody.mass
@@ -515,6 +557,30 @@ export default class World {
         this.moonRoverBody.position,
         this.moonRoverBody.force,
         this.moonRoverBody.mass
+      );
+      this.wheelLFBody.force = this.applyGForce(
+        this.gravityDirection,
+        this.wheelLFBody.position,
+        this.wheelLFBody.force,
+        this.wheelLFBody.mass
+      );
+      this.wheelRFBody.force = this.applyGForce(
+        this.gravityDirection,
+        this.wheelRFBody.position,
+        this.wheelRFBody.force,
+        this.wheelRFBody.mass
+      );
+      this.wheelLBBody.force = this.applyGForce(
+        this.gravityDirection,
+        this.wheelLBBody.position,
+        this.wheelLBBody.force,
+        this.wheelLBBody.mass
+      );
+      this.wheelRBBody.force = this.applyGForce(
+        this.gravityDirection,
+        this.wheelRBBody.position,
+        this.wheelRBBody.force,
+        this.wheelRBBody.mass
       );
 
       // Apply center gravity to moon lander
@@ -536,6 +602,17 @@ export default class World {
         this.ufoBody.force,
         this.ufoBody.mass
       );
+      // Update projects indicator to follow the shelf
+      this.ufoBodySpherical.setFromVector3(this.ufoBody.position);
+      this.ufoIndicator.position.copy(
+        this.emptyVec3.setFromSphericalCoords(
+          this.ufoBody.position.distanceTo(this.origin),
+          this.ufoBodySpherical.phi,
+          this.ufoBodySpherical.theta
+        )
+      );
+      // Upright the indicator
+      this.ufoIndicator.lookAt(this.origin);
     }
 
     // Soccer game update
@@ -703,6 +780,29 @@ export default class World {
         this.shelfBody.mass
       );
 
+      // Update projects indicator to follow the shelf
+      this.shelfBodySpherical.setFromVector3(this.shelfBody.position);
+      this.projectsIndicator.position.copy(
+        this.emptyVec3.setFromSphericalCoords(
+          this.planetRadius + 0.3,
+          this.shelfBodySpherical.phi,
+          this.shelfBodySpherical.theta
+        )
+      );
+      // Upright the indicator
+      this.projectsIndicator.lookAt(this.origin);
+      // Detect is shelf lies down, then hide the indicator
+      this.shelfModel.matrix.extractBasis(
+        this.shelfXAxis,
+        this.shelfYAxis,
+        this.shelfZAxis
+      );
+      if (this.shelfYAxis.angleTo(this.shelfModel.position) > 1) {
+        this.scene.remove(this.projectsIndicator);
+      } else {
+        this.scene.add(this.projectsIndicator);
+      }
+
       //Apply center gravity to lego car
       this.legoBody.force = this.applyGForce(
         this.gravityDirection,
@@ -715,6 +815,7 @@ export default class World {
     // Update astronaut physics
     if (this.astronaut) {
       this.astronaut.update();
+      // Apply center gravity to astronaut
       this.astronautBody.force = this.applyGForce(
         this.astronautGravityDirection,
         this.astronautBody.position,
@@ -740,95 +841,144 @@ export default class World {
       );
 
       // Set asronaut body spherical cordinate from player plate position
-      this.astronautBodySpherical.setFromVector3(
-        this.playerPlate.getWorldPosition(this.emptyVec3)
-      );
-      this.astronautBody.position.copy(
-        this.emptyVec3.setFromSphericalCoords(
-          this.astronautToOrigin,
-          this.astronautBodySpherical.phi,
-          this.astronautBodySpherical.theta
-        )
-      );
+      // this.astronautBodySpherical.setFromVector3(
+      //   this.playerPlate.getWorldPosition(this.emptyVec3)
+      // );
+      // this.astronautBody.position.copy(
+      //   this.emptyVec3.setFromSphericalCoords(
+      //     this.astronautToOrigin,
+      //     this.astronautBodySpherical.phi,
+      //     this.astronautBodySpherical.theta
+      //   )
+      // );
 
       // Match astronaut mash to follow physic body
       this.astronautMesh.position.copy(this.astronautBody.position);
       this.astronautMesh.quaternion.copy(this.astronautBody.quaternion);
-    }
 
-    // Astronut movement controls
-    // Moving forward
-    if (this.keyMap["KeyW"]) {
-      this.playerGroup.rotateOnAxis(this.forwardAxis, -this.walkRad);
-      // update camera position when move forward
-      this.camCurrentPosition.lerp(this.camNewPosition, 0.03);
-      this.camCurrentPositionLookAt.lerp(this.camNewPositionLookAt, 0.03);
+      // Astronut movement controls
+      // Update forward, backward and jump velocity and direction
+      this.astronautBody.quaternion.vmult(
+        this.walkVelocity.scale(1),
+        this.walkVelocityAndDir
+      );
+      this.astronautBody.quaternion.vmult(
+        this.walkVelocity.scale(-0.5),
+        this.backVelocityAndDir
+      );
+      this.astronautBody.quaternion.vmult(
+        this.jumpHeight.scale(1.2),
+        this.jumpVelocityAndDir
+      );
 
-      this.camera.instance.position.copy(this.camCurrentPosition);
-      this.camera.instance.lookAt(this.camCurrentPositionLookAt);
-      if (!this.keyMap["Space"]) {
-        this.astronaut.animation.play("run");
-      }
-    }
-    // Moving backward
-    if (this.keyMap["KeyS"]) {
-      this.playerGroup.rotateOnAxis(this.forwardAxis, this.walkRad * 0.2);
-      if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
-        this.astronaut.animation.play("walk");
-      }
-    }
-    // Turning left
-    if (this.keyMap["KeyA"]) {
-      this.playerGroup.rotateOnAxis(this.turnAxis, this.walkRad * 6);
-      if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
-        this.astronaut.animation.play("walk");
-      }
-    }
-    // Turning right
-    if (this.keyMap["KeyD"]) {
-      this.playerGroup.rotateOnAxis(this.turnAxis, -this.walkRad * 6);
-      if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
-        this.astronaut.animation.play("walk");
-      }
-    }
-    // Jumping event
-    if (this.keyMap["Space"] && this.astronautCollide && !this.spaceKeyDown) {
-      // Delay jump action to match jump animation
-      let jumpTimeout;
-      clearTimeout(jumpTimeout);
-      jumpTimeout = setTimeout(() => {
-        this.astronautBody.quaternion.vmult(
-          this.jumpHeight,
-          this.astronautBody.velocity
-        );
-      }, 200);
-
-      this.astronaut.animation.play("jump");
-
-      // Set astronaut collide back to false and space key down back to true
-      this.astronautCollide = false;
-      this.spaceKeyDown = true;
-    } else if (
-      !this.keyMap["KeyW"] &&
-      !this.keyMap["KeyS"] &&
-      !this.keyMap["KeyA"] &&
-      !this.keyMap["KeyD"] &&
-      !this.keyMap["Space"]
-    ) {
-      if (!this.playIdleAnimation && this.astronaut) {
-        this.astronaut.animation.play("idle2");
-      }
-      // Play idle animation when nothing moves on screen
-      else if (this.playIdleAnimation && this.astronaut) {
-        this.camCurrentPosition.lerp(
-          this.camIdlePosition.getWorldPosition(this.emptyVec3),
-          0.03
-        );
-        this.camCurrentPositionLookAt.lerp(this.astronautBody.position, 0.03);
+      // Moving forward
+      if (this.keyMap["KeyW"]) {
+        if (this.astronautBody.velocity.length() > 3.5) {
+          this.astronautBody.velocity.copy(this.astronautBody.velocity);
+        } else {
+          this.astronautBody.velocity.copy(this.walkVelocityAndDir);
+        }
+        // update camera position when move forward
+        this.camCurrentPosition.lerp(this.camNewPosition, 0.03);
+        this.camCurrentPositionLookAt.lerp(this.camNewPositionLookAt, 0.03);
 
         this.camera.instance.position.copy(this.camCurrentPosition);
         this.camera.instance.lookAt(this.camCurrentPositionLookAt);
-        this.astronaut.animation.play("idle1");
+        if (!this.keyMap["Space"]) {
+          this.astronaut.animation.play("run");
+        }
+      }
+      // Moving backward
+      if (this.keyMap["KeyS"]) {
+        if (this.astronautBody.velocity.length() > 1.75) {
+          this.astronautBody.velocity.copy(this.astronautBody.velocity);
+        } else {
+          this.astronautBody.velocity.copy(this.backVelocityAndDir);
+        }
+        if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
+          this.astronaut.animation.play("walk");
+        }
+      }
+      // Turning left
+      if (this.keyMap["KeyA"]) {
+        this.playerGroup.rotateOnAxis(this.turnAxis, this.walkRad * 6);
+        if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
+          this.astronaut.animation.play("walk");
+        }
+      }
+      // Turning right
+      if (this.keyMap["KeyD"]) {
+        this.playerGroup.rotateOnAxis(this.turnAxis, -this.walkRad * 6);
+        if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
+          this.astronaut.animation.play("walk");
+        }
+      }
+      // Jumping event
+      if (this.keyMap["Space"] && this.astronautCollide && !this.spaceKeyDown) {
+        this.astronautBody.velocity.vadd(
+          this.jumpVelocityAndDir,
+          this.astronautBody.velocity
+        );
+
+        this.astronaut.animation.play("jump");
+
+        // Set astronaut collide back to false and space key down back to true
+        this.astronautCollide = false;
+        this.spaceKeyDown = true;
+      } else if (
+        !this.keyMap["KeyW"] &&
+        !this.keyMap["KeyS"] &&
+        !this.keyMap["KeyA"] &&
+        !this.keyMap["KeyD"] &&
+        !this.keyMap["Space"]
+      ) {
+        if (!this.playIdleAnimation && this.astronaut) {
+          this.astronaut.animation.play("idle2");
+        }
+        // Play idle animation when nothing moves on screen
+        else if (this.playIdleAnimation && this.astronaut) {
+          this.camCurrentPosition.lerp(
+            this.camIdlePosition.getWorldPosition(this.emptyVec3),
+            0.03
+          );
+          this.camCurrentPositionLookAt.lerp(this.astronautBody.position, 0.03);
+          // Camera movement
+          this.camera.instance.position.copy(this.camCurrentPosition);
+          this.camera.instance.lookAt(this.camCurrentPositionLookAt);
+          this.astronaut.animation.play("idle1");
+        }
+      }
+
+      /**
+       * PlayerPlate follow astronautBody
+       */
+      // Get current position of austronaut body
+      this.newPlayerPosition.copy(this.astronautGravityDirection.scale(-1));
+      this.angleBetweenPositions = this.newPlayerPosition.angleTo(
+        this.oldPlayerPosition
+      );
+
+      if (this.angleBetweenPositions > 0) {
+        // If there is any position changes, get axises of playerGroup for latter update
+        this.playerGroup.getWorldDirection(this.playerGroupZAxis);
+        this.playerGroupYAxis
+          .copy(this.playerGroup.up)
+          .applyMatrix4(this.playerGroup.matrix)
+          .normalize();
+        this.playerGroupXAxis.crossVectors(
+          this.playerGroupZAxis,
+          this.playerGroupYAxis
+        );
+
+        this.upRightAngle =
+          Math.PI / 2 - this.newPlayerPosition.angleTo(this.playerGroupXAxis);
+        this.frontRightAngle =
+          Math.PI / 2 - this.newPlayerPosition.angleTo(this.playerGroupZAxis);
+
+        this.playerGroup.rotateOnAxis(this.upRightAxis, this.upRightAngle);
+        this.playerGroup.rotateOnAxis(this.forwardAxis, this.frontRightAngle);
+
+        this.oldPlayerPosition.copy(this.newPlayerPosition);
       }
     }
 
@@ -841,7 +991,6 @@ export default class World {
     /**
      * Camera update
      */
-
     // Update camera to follow astronaut position
     this.camNewPosition.copy(this.camPosition.getWorldPosition(this.emptyVec3));
     this.camNewPositionLookAt.copy(

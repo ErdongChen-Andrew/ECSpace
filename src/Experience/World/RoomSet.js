@@ -3,23 +3,30 @@ import * as CANNON from "cannon-es";
 import Experience from "../Experience";
 
 export default class RoomSet {
-  constructor(defaultContactMaterial, physicsWorld, applyRotation) {
+  constructor(defaultMaterial, physicsWorld, applyRotation) {
     // Setups
     this.experience = new Experience();
     this.scene = this.experience.scene;
+    this.sizes = this.experience.sizes;
     this.resources = this.experience.resources;
-    this.defaultContactMaterial = defaultContactMaterial;
+    this.defaultMaterial = defaultMaterial;
     this.physicsWorld = physicsWorld;
     this.upAxis = new CANNON.Vec3(0, 1, 0);
     this.applyRotation = applyRotation;
 
     // Table materials and textures setup
     this.tableTopMaterial = new THREE.MeshMatcapMaterial();
+    this.monitorScreenMaterial = new THREE.MeshBasicMaterial();
     this.tableDrawerMaterial = new THREE.MeshMatcapMaterial();
     this.tableTopTexture = this.resources.items.tableTopMatcapTexture;
     this.tableDrawerTexture = this.resources.items.tableDrawerMatcapTexture;
     this.tableTopTexture.encoding = THREE.sRGBEncoding;
     this.tableDrawerTexture.encoding = THREE.sRGBEncoding;
+
+    this.monitorScreenTexture = this.resources.items.monitorScreenTexture;
+    this.monitorScreenTexture.encoding = THREE.sRGBEncoding;
+    this.monitorScreenTexture.generateMipmaps = false;
+    this.monitorScreenTexture.minFilter = THREE.NearestFilter;
 
     // Laptop materials and textures setup
     this.laptopMaterial = new THREE.MeshMatcapMaterial();
@@ -31,6 +38,7 @@ export default class RoomSet {
     this.keyboardTexture.encoding = THREE.sRGBEncoding;
 
     this.laptopScreenTexture = this.resources.items.laptopScreenTexture;
+    this.laptopScreenTexture.encoding = THREE.sRGBEncoding;
     this.laptopScreenTexture.generateMipmaps = false;
     this.laptopScreenTexture.minFilter = THREE.NearestFilter;
 
@@ -55,6 +63,7 @@ export default class RoomSet {
     this.picMaterial = new THREE.MeshBasicMaterial();
     this.picFrameTexture = this.resources.items.woodMatcapTexture;
     this.picTexture = this.resources.items.picTexture;
+    this.picTexture.encoding = THREE.sRGBEncoding;
     this.picTexture.generateMipmaps = false;
     this.picTexture.minFilter = THREE.NearestFilter;
 
@@ -98,6 +107,7 @@ export default class RoomSet {
 
     // TV materials and textures setup
     this.tvMaterial = new THREE.MeshMatcapMaterial();
+    this.tvScreenMaterial = new THREE.MeshBasicMaterial();
     this.tvTexture = this.resources.items.tableTopMatcapTexture;
     this.tvTexture.encoding = THREE.sRGBEncoding;
 
@@ -139,6 +149,36 @@ export default class RoomSet {
     this.legoDarkBlueTexture.encoding = THREE.sRGBEncoding;
     this.legoGaryTexture.encoding = THREE.sRGBEncoding;
     this.legoRedTexture.encoding = THREE.sRGBEncoding;
+
+    // Projects shelf textures and pictures
+    this.project001Material = new THREE.MeshBasicMaterial();
+    this.project002Material = new THREE.MeshBasicMaterial();
+    this.project003Material = new THREE.MeshBasicMaterial();
+    this.project004Material = new THREE.MeshBasicMaterial();
+    this.chromeMaterial = new THREE.MeshMatcapMaterial();
+    this.chromeTextures = this.resources.items.planetLandMatcapTexture;
+    this.chromeYellowMaterial = new THREE.MeshMatcapMaterial();
+    this.chromeYellowTextures = this.resources.items.moonMatcapTexture;
+    this.chromeGreenMaterial = new THREE.MeshMatcapMaterial();
+    this.chromeGreenTextures = this.resources.items.treeMatcapTexture;
+    this.chromeYellowTextures.encoding = THREE.sRGBEncoding;
+    
+    this.project001Texture = this.resources.items.project001Texture;
+    this.project001Texture.encoding = THREE.sRGBEncoding;
+    this.project001Texture.generateMipmaps = false;
+    this.project001Texture.minFilter = THREE.NearestFilter;
+    this.project002Texture = this.resources.items.project002Texture;
+    this.project002Texture.encoding = THREE.sRGBEncoding;
+    this.project002Texture.generateMipmaps = false;
+    this.project002Texture.minFilter = THREE.NearestFilter;
+    this.project003Texture = this.resources.items.project003Texture;
+    this.project003Texture.encoding = THREE.sRGBEncoding;
+    this.project003Texture.generateMipmaps = false;
+    this.project003Texture.minFilter = THREE.NearestFilter;
+    this.project004Texture = this.resources.items.project004Texture;
+    this.project004Texture.encoding = THREE.sRGBEncoding;
+    this.project004Texture.generateMipmaps = false;
+    this.project004Texture.minFilter = THREE.NearestFilter;
 
     // Table model and physics
     this.setTable();
@@ -194,7 +234,7 @@ export default class RoomSet {
 
     // Lego car model and physics
     this.setLego();
-    this.setLegoPhysics()
+    this.setLegoPhysics();
   }
 
   /**
@@ -216,6 +256,13 @@ export default class RoomSet {
         ) {
           child.material = this.tableDrawerMaterial;
           this.tableDrawerMaterial.matcap = this.tableDrawerTexture;
+        }
+        if (child.name === "monitorScreen") {
+          child.geometry = new THREE.PlaneGeometry(10, 4.9);
+          child.material = this.monitorScreenMaterial;
+          child.material.map = this.monitorScreenTexture;
+          child.rotation.y = -Math.PI / 2;
+          child.position.x = 0.665;
         }
       }
     });
@@ -427,6 +474,8 @@ export default class RoomSet {
 
   // Set up the TV
   setTV() {
+    this.tvScreenRender = this.experience.renderer.tvScreenRender;
+
     this.tvModel = this.resources.items.tvModel.scene;
     this.tvModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -437,6 +486,13 @@ export default class RoomSet {
         ) {
           child.material = this.tvMaterial;
           this.tvMaterial.matcap = this.tvTexture;
+        }
+        if (child.name === "TVScreen") {
+          child.geometry = new THREE.PlaneGeometry(3.9, 2.35);
+          child.material = this.tvScreenMaterial;
+          child.material.map = this.tvScreenRender.texture;
+          child.rotation.y = -Math.PI / 2;
+          child.position.x = -0.03;
         }
       }
     });
@@ -499,14 +555,144 @@ export default class RoomSet {
 
   // Set up the shelf
   setShelf() {
+    this.shelfGroup = new THREE.Group();
     this.shelfModel = this.resources.items.shelfModel.scene;
+    this.project001Model = this.resources.items.project001Model.scene;
+    this.project002Model = this.resources.items.project002Model.scene;
+    this.project003Model = this.resources.items.project003Model.scene;
+    this.project004Model = this.resources.items.project004Model.scene;
+
+    // At camera viewing position box
+    this.shelfCamPosition = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1, 0.1, 0.1),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        // opacity: 0,
+      })
+    );
+    this.shelfCamPosition.position.z = -5;
+
+    // Shelf mesh setups
     this.shelfModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        child.material = this.tableTopMaterial;
-        this.tableTopMaterial.matcap = this.tableTopTexture;
+        if (child.name === "shelf") {
+          child.material = this.tableTopMaterial;
+          this.tableTopMaterial.matcap = this.tableTopTexture;
+        }
+        if (child.name === "box") {
+          child.material = this.mugTextMaterial;
+          this.tableTopMaterial.matcap = this.mugTextTexture;
+        }
       }
     });
-    this.scene.add(this.shelfModel);
+    // Project001 mesh setups
+    this.project001Model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (child.name === "chrome") {
+          child.material = this.chromeMaterial;
+          this.chromeMaterial.matcap = this.chromeTextures;
+        }
+        if (child.name === "jsText") {
+          child.material = this.picFrameMaterial;
+        }
+        if (child.name === "threejsText") {
+          child.material = this.switchBlueMaterial;
+        }
+        if (child.name === "chromeRed") {
+          child.material = this.legoRedMaterial;
+          this.tableTopMaterial.matcap = this.legoRedTexture;
+        }
+        if (child.name === "chromeYellow") {
+          child.material = this.chromeYellowMaterial;
+          this.chromeYellowMaterial.matcap = this.chromeYellowTextures;
+        }
+        if (child.name === "chromeGreen") {
+          child.material = this.chromeGreenMaterial;
+          this.chromeGreenMaterial.matcap = this.chromeGreenTextures;
+        }
+        if (child.name === "projectPic") {
+          child.material = this.project001Material;
+          child.material.map = this.project001Texture;
+        }
+      }
+    });
+    // Project002 mesh setups
+    this.project002Model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (child.name === "chrome001") {
+          child.material = this.chromeMaterial;
+        }
+        if (child.name === "jsText001") {
+          child.material = this.picFrameMaterial;
+        }
+        if (child.name === "threejsText001") {
+          child.material = this.switchBlueMaterial;
+        }
+        if (child.name === "chromeRed001" || child.name === "blenderText001") {
+          child.material = this.legoRedMaterial;
+        }
+        if (child.name === "chromeYellow001") {
+          child.material = this.chromeYellowMaterial;
+        }
+        if (child.name === "chromeGreen001") {
+          child.material = this.chromeGreenMaterial;
+        }
+        if (child.name === "projectPic001") {
+          child.material = this.project002Material;
+          child.material.map = this.project002Texture;
+        }
+      }
+    });
+    // Project003 mesh setups
+    this.project003Model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (child.name === "chrome002") {
+          child.material = this.chromeMaterial;
+        }
+        if (child.name === "chromeRed002" || child.name === "blenderText002") {
+          child.material = this.legoRedMaterial;
+        }
+        if (child.name === "chromeYellow002") {
+          child.material = this.chromeYellowMaterial;
+        }
+        if (child.name === "chromeGreen002") {
+          child.material = this.chromeGreenMaterial;
+        }
+        if (child.name === "projectPic002") {
+          child.material = this.project003Material;
+          child.material.map = this.project003Texture;
+        }
+      }
+    });
+    // Project004 mesh setups
+    this.project004Model.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (child.name === "chrome003") {
+          child.material = this.chromeMaterial;
+        }
+        if (child.name === "chromeRed003" || child.name === "blenderText003") {
+          child.material = this.legoRedMaterial;
+        }
+        if (child.name === "chromeYellow003") {
+          child.material = this.chromeYellowMaterial;
+        }
+        if (child.name === "chromeGreen003") {
+          child.material = this.chromeGreenMaterial;
+        }
+        if (child.name === "projectPic003") {
+          child.material = this.project004Material;
+          child.material.map = this.project004Texture;
+        }
+      }
+    });
+
+    this.shelfGroup.add(this.shelfModel);
+    this.shelfGroup.add(this.project001Model);
+    this.shelfGroup.add(this.project002Model);
+    this.shelfGroup.add(this.project003Model);
+    this.shelfGroup.add(this.project004Model);
+    this.shelfGroup.add(this.shelfCamPosition);
+    this.scene.add(this.shelfGroup);
   }
 
   // Set up the lego
@@ -567,7 +753,7 @@ export default class RoomSet {
 
     this.tableBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.tableBody.addShape(tableTopShape, new CANNON.Vec3(0, 1.05, 0));
     this.tableBody.addShape(tableDrawerShape, new CANNON.Vec3(0, 0, -1.5));
@@ -583,7 +769,7 @@ export default class RoomSet {
     this.physicsWorld.addBody(this.tableBody);
 
     // set position for the table
-    this.tableBody.position.x = 13;
+    this.tableBody.position.x = 12.4;
     this.tableBody.position.y = 10;
     this.tableBody.quaternion.setFromVectors(
       this.upAxis,
@@ -598,7 +784,7 @@ export default class RoomSet {
 
     this.laptopBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.laptopBody.addShape(
       LaptopAShape,
@@ -610,7 +796,7 @@ export default class RoomSet {
     this.physicsWorld.addBody(this.laptopBody);
 
     // set position for the laptop
-    this.laptopBody.position.x = 14;
+    this.laptopBody.position.x = 13.05;
     this.laptopBody.position.y = 11;
     this.laptopBody.quaternion.setFromVectors(
       this.upAxis,
@@ -626,7 +812,7 @@ export default class RoomSet {
 
     this.chairBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.chairBody.addShape(
       chairShape,
@@ -654,7 +840,7 @@ export default class RoomSet {
 
     this.speakerBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.speakerBody.addShape(speakerShape, new CANNON.Vec3(0, 0.4, 0));
     this.speakerBody.addShape(supportShape, new CANNON.Vec3(0, 0.4, 0));
@@ -662,7 +848,7 @@ export default class RoomSet {
     this.physicsWorld.addBody(this.speakerBody);
 
     // set position for the speaker
-    this.speakerBody.position.x = 14.5;
+    this.speakerBody.position.x = 13.45;
     this.speakerBody.position.y = 10.5;
     this.speakerBody.position.z = -1.5;
     this.speakerBody.quaternion.setFromVectors(
@@ -678,7 +864,7 @@ export default class RoomSet {
 
     this.picFrameBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.picFrameBody.addShape(picFrameShape);
     this.picFrameBody.addShape(supportShape);
@@ -686,7 +872,7 @@ export default class RoomSet {
     this.physicsWorld.addBody(this.picFrameBody);
 
     // set position for the photo frame
-    this.picFrameBody.position.x = 14.5;
+    this.picFrameBody.position.x = 13.8;
     this.picFrameBody.position.y = 10.5;
     this.picFrameBody.position.z = 1.5;
     this.picFrameBody.quaternion.setFromVectors(
@@ -702,7 +888,7 @@ export default class RoomSet {
 
     this.mugBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.mugBody.addShape(mugShape);
     this.mugBody.addShape(supportShape);
@@ -710,8 +896,8 @@ export default class RoomSet {
     this.physicsWorld.addBody(this.mugBody);
 
     // set position for the mug
-    this.mugBody.position.x = 14;
-    this.mugBody.position.y = 11.5;
+    this.mugBody.position.x = 13.15;
+    this.mugBody.position.y = 11.2;
     this.mugBody.position.z = 1.2;
     this.mugBody.quaternion.setFromVectors(this.upAxis, this.mugBody.position);
   }
@@ -723,7 +909,7 @@ export default class RoomSet {
 
     this.telescopeBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.telescopeBody.addShape(
       telescopeShape,
@@ -755,17 +941,17 @@ export default class RoomSet {
     // Create sofa physics body
     this.sofaBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
 
     // Create pillows physics body
     this.sofaPillow001Body = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.sofaPillow002Body = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
 
     // Add sofa body shapes
@@ -817,7 +1003,7 @@ export default class RoomSet {
 
     this.tvBenchBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
 
     // Add TV bench body shape
@@ -878,7 +1064,7 @@ export default class RoomSet {
 
     this.tvBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
 
     this.tvBody.addShape(tvShape);
@@ -908,7 +1094,7 @@ export default class RoomSet {
 
     this.switchBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
 
     this.switchBody.addShape(switchShape);
@@ -936,7 +1122,7 @@ export default class RoomSet {
 
     this.diffuserBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
 
     this.diffuserBody.addShape(diffuserShape, new CANNON.Vec3(0, 0.75, 0));
@@ -961,7 +1147,7 @@ export default class RoomSet {
 
     this.shelfBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
 
     this.shelfBody.addShape(shelfShape);
@@ -988,7 +1174,7 @@ export default class RoomSet {
 
     this.legoBody = new CANNON.Body({
       mass: 1,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
 
     this.legoBody.addShape(legoShape, new CANNON.Vec3(0, 0.3, 0));
@@ -1091,13 +1277,13 @@ export default class RoomSet {
     /**
      * Shelf physics update
      */
-    this.shelfModel.position.copy(this.shelfBody.position);
-    this.shelfModel.quaternion.copy(this.shelfBody.quaternion);
+    this.shelfGroup.position.copy(this.shelfBody.position);
+    this.shelfGroup.quaternion.copy(this.shelfBody.quaternion);
 
     /**
      * Lego car physics update
      */
-     this.legoModel.position.copy(this.legoBody.position);
-     this.legoModel.quaternion.copy(this.legoBody.quaternion);
+    this.legoModel.position.copy(this.legoBody.position);
+    this.legoModel.quaternion.copy(this.legoBody.quaternion);
   }
 }

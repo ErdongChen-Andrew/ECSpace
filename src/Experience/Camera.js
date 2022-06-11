@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { TrackballControls } from "three/examples/jsm/controls/TrackballControls";
+import { TrackballControls } from "three/examples/jsm/controls/TrackballControls.js";
 
 import Experience from "./Experience";
 
@@ -27,6 +27,7 @@ export default class Camera {
   setOrbitControls() {
     this.controls = new OrbitControls(this.instance, this.canvas);
     // this.controls = new TrackballControls(this.instance, this.canvas);
+
     this.controls.enableDamping = true;
   }
 

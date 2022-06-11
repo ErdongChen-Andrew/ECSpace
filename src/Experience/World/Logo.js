@@ -38,7 +38,7 @@ export default class Logo {
     const elapsedTime = this.clock.getElapsedTime();
     if (logoOffset < 6) {
       this.logoModel.position.z =
-        0.5 * Math.sin(elapsedTime / 1.2) + 18 + (6 - logoOffset)/1.8;
+        0.5 * Math.sin(elapsedTime / 1.2) + 18 + (6 - logoOffset) / 1.8;
     } else {
       this.logoModel.position.z = 0.5 * Math.sin(elapsedTime / 1.2) + 18;
     }

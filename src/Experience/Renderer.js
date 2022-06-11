@@ -7,6 +7,7 @@ export default class Renderer {
     this.canvas = this.experience.canvas;
     this.sizes = this.experience.sizes;
     this.camera = this.experience.camera;
+    this.resources = this.experience.resources;
     this.scene = this.experience.scene;
     this.debug = this.experience.debug;
 
@@ -31,6 +32,40 @@ export default class Renderer {
     this.instance.outputEncoding = THREE.sRGBEncoding;
     this.instance.toneMapping = THREE.LinearToneMapping;
     this.instance.toneMappingExposure = 1.2;
+
+    // Render scene on to TV screen
+    this.tvScreenRender = new THREE.WebGLRenderTarget(
+      this.sizes.width,
+      this.sizes.height,
+      {
+        encoding: THREE.sRGBEncoding,
+        generateMipmaps: false,
+        minFilter: THREE.NearestFilter,
+      }
+    );
+
+    this.tvScene = new THREE.Scene();
+    let allNeededObjects = [];
+
+    // Selecte what needs to be shown on TV
+    this.resources.on("ready", () => {
+      this.scene.clone().children.forEach((item) => {
+        if (item instanceof THREE.Points || item instanceof THREE.Mesh) {
+          allNeededObjects.push(item);
+        }
+        item.children.forEach((items) => {
+          if (
+            items.name === "ice" ||
+            items.name === "land" ||
+            items.name === "miniplanet" ||
+            items.name === "rig"
+          ) {
+            allNeededObjects.push(items);
+          }
+        });
+      });
+      this.tvScene.add(...allNeededObjects);
+    });
 
     // Debug
     if (this.debug.active) {
@@ -59,6 +94,9 @@ export default class Renderer {
   }
 
   update() {
+    this.instance.setRenderTarget(this.tvScreenRender);
+    this.instance.render(this.tvScene, this.camera.instance);
+    this.instance.setRenderTarget(null);
     this.instance.render(this.scene, this.camera.instance);
   }
 }

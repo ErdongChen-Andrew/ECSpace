@@ -3,12 +3,12 @@ import * as CANNON from "cannon-es";
 import Experience from "../Experience";
 
 export default class ExplorerSet {
-  constructor(defaultContactMaterial, physicsWorld) {
+  constructor(defaultMaterial, physicsWorld) {
     // Setups
     this.experience = new Experience();
     this.scene = this.experience.scene;
     this.resources = this.experience.resources;
-    this.defaultContactMaterial = defaultContactMaterial;
+    this.defaultMaterial = defaultMaterial;
     this.physicsWorld = physicsWorld;
     this.upAxis = new CANNON.Vec3(0, 1, 0);
 
@@ -76,19 +76,23 @@ export default class ExplorerSet {
     // Apply moon rover material and texture
     this.moonRoverModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        if (child.name === "silver") {
+        if (child.name === "silver001") {
           child.material = this.moonRoverSilverMaterial;
           this.moonRoverSilverMaterial.matcap = this.moonRoverSilverTexture;
         }
-        if (child.name === "copper") {
+        if (child.name === "copper001") {
           child.material = this.moonRoverCopperMaterial;
           this.moonRoverCopperMaterial.matcap = this.moonRoverCopperTexture;
         }
-        if (child.name === "black") {
+        if (
+          child.name === "black001" ||
+          child.name === "wheel002" ||
+          child.name === "wheel003"
+        ) {
           child.material = this.moonRoverBlackMaterial;
           this.moonRoverBlackMaterial.matcap = this.moonRoverBlackTexture;
         }
-        if (child.name === "flag") {
+        if (child.name === "flag001") {
           child.material = this.moonRoverRedMaterial;
           this.moonRoverRedMaterial.matcap = this.moonRoverRedTexture;
         }
@@ -108,14 +112,6 @@ export default class ExplorerSet {
         if (child.name === "wheel001") {
           this.wheelRFMesh = child;
           this.wheelRFPosition = child.position;
-        }
-        if (child.name === "wheel002") {
-          this.wheelLMMesh = child;
-          this.wheelLMPosition = child.position;
-        }
-        if (child.name === "wheel003") {
-          this.wheelRMMesh = child;
-          this.wheelRMPosition = child.position;
         }
         if (child.name === "wheel004") {
           this.wheelLBMesh = child;
@@ -229,7 +225,7 @@ export default class ExplorerSet {
     const moonRoverMass = 1;
     const wheelMass = 1;
     const moonRoverPositionX = 10;
-    const moonRoverPositionY = -2;
+    const moonRoverPositionY = 3;
     const moonRoverPositionZ = -13;
 
     // Add moon rover body
@@ -238,7 +234,7 @@ export default class ExplorerSet {
     const moonRoverShape3 = new CANNON.Cylinder(0.05, 0.05, 0.75);
     this.moonRoverBody = new CANNON.Body({
       mass: moonRoverMass,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.moonRoverBody.addShape(moonRoverShape1, new CANNON.Vec3(0, 0, -0.17));
     this.moonRoverBody.addShape(moonRoverShape2, new CANNON.Vec3(0, 0, -0.4));
@@ -263,7 +259,7 @@ export default class ExplorerSet {
     const wheelShape = new CANNON.Sphere(0.16);
     this.wheelLFBody = new CANNON.Body({
       mass: wheelMass,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.wheelLFBody.addShape(wheelShape);
     this.wheelLFBody.position.set(
@@ -276,7 +272,7 @@ export default class ExplorerSet {
     // Add right front wheel body
     this.wheelRFBody = new CANNON.Body({
       mass: wheelMass,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.wheelRFBody.addShape(wheelShape);
     this.wheelRFBody.position.set(
@@ -286,36 +282,10 @@ export default class ExplorerSet {
     );
     this.physicsWorld.addBody(this.wheelRFBody);
 
-    // Add left middle wheel body
-    this.wheelLMBody = new CANNON.Body({
-      mass: wheelMass,
-      material: this.defaultContactMaterial,
-    });
-    this.wheelLMBody.addShape(wheelShape);
-    this.wheelLMBody.position.set(
-      this.wheelLMPosition.x + moonRoverPositionX,
-      this.wheelLMPosition.y + moonRoverPositionY,
-      this.wheelLMPosition.z + moonRoverPositionZ
-    );
-    this.physicsWorld.addBody(this.wheelLMBody);
-
-    // Add right middle wheel body
-    this.wheelRMBody = new CANNON.Body({
-      mass: wheelMass,
-      material: this.defaultContactMaterial,
-    });
-    this.wheelRMBody.addShape(wheelShape);
-    this.wheelRMBody.position.set(
-      this.wheelRMPosition.x + moonRoverPositionX,
-      this.wheelRMPosition.y + moonRoverPositionY,
-      this.wheelRMPosition.z + moonRoverPositionZ
-    );
-    this.physicsWorld.addBody(this.wheelRMBody);
-
     // Add left back wheel body
     this.wheelLBBody = new CANNON.Body({
       mass: wheelMass,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.wheelLBBody.addShape(wheelShape);
     this.wheelLBBody.position.set(
@@ -328,7 +298,7 @@ export default class ExplorerSet {
     // Add right back wheel body
     this.wheelRBBody = new CANNON.Body({
       mass: wheelMass,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.wheelRBBody.addShape(wheelShape);
     this.wheelRBBody.position.set(
@@ -353,14 +323,6 @@ export default class ExplorerSet {
     );
     const rightFrontPivotA = new THREE.Vector3().subVectors(
       this.wheelRFPosition,
-      this.moonRoverModel.position
-    );
-    const leftMiddlePivotA = new THREE.Vector3().subVectors(
-      this.wheelLMPosition,
-      this.moonRoverModel.position
-    );
-    const rightMiddlePivotA = new THREE.Vector3().subVectors(
-      this.wheelRMPosition,
       this.moonRoverModel.position
     );
     const leftBackPivotA = new THREE.Vector3().subVectors(
@@ -395,28 +357,6 @@ export default class ExplorerSet {
       }
     );
     this.physicsWorld.addConstraint(this.constraintRF);
-    // left middle wheel constraint
-    this.constraintLM = new CANNON.HingeConstraint(
-      this.moonRoverBody,
-      this.wheelLMBody,
-      {
-        pivotA: leftMiddlePivotA,
-        axisA: leftMiddleAxis,
-        maxForce: 0.99,
-      }
-    );
-    this.physicsWorld.addConstraint(this.constraintLM);
-    // right middle wheel constraint
-    this.constraintRM = new CANNON.HingeConstraint(
-      this.moonRoverBody,
-      this.wheelRMBody,
-      {
-        pivotA: rightMiddlePivotA,
-        axisA: rightMiddleAxis,
-        maxForce: 0.99,
-      }
-    );
-    this.physicsWorld.addConstraint(this.constraintRM);
     // left back wheel constraint
     this.constraintLB = new CANNON.HingeConstraint(
       this.moonRoverBody,
@@ -443,8 +383,6 @@ export default class ExplorerSet {
     // Front and back wheels drive
     this.constraintLF.enableMotor();
     this.constraintRF.enableMotor();
-    // this.constraintLM.enableMotor();
-    // this.constraintRM.enableMotor();
     this.constraintLB.enableMotor();
     this.constraintRB.enableMotor();
 
@@ -457,8 +395,6 @@ export default class ExplorerSet {
     // Apply moon rover moter speed
     this.constraintLF.setMotorSpeed(this.forwardSpeed);
     this.constraintRF.setMotorSpeed(this.forwardSpeed);
-    // this.constraintLM.setMotorSpeed(this.forwardSpeed/10);
-    // this.constraintRM.setMotorSpeed(this.forwardSpeed/10);
     this.constraintLB.setMotorSpeed(this.forwardSpeed);
     this.constraintRB.setMotorSpeed(this.forwardSpeed);
   }
@@ -478,7 +414,7 @@ export default class ExplorerSet {
     const moonLanderSupport = new CANNON.Sphere(0.4);
     this.moonLanderBody = new CANNON.Body({
       mass: moonLanderMass,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.moonLanderBody.addShape(moonLanderShape1);
     this.moonLanderBody.addShape(moonLanderShape2, new CANNON.Vec3(0, 0.2, 0));
@@ -538,7 +474,7 @@ export default class ExplorerSet {
     const moonSatelliteShape4 = new CANNON.Cylinder(0.2, 0.2, 1.5);
     this.moonSatelliteBody = new CANNON.Body({
       mass: moonSatelliteMass,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
     this.moonSatelliteBody.addShape(moonSatelliteShape1);
     this.moonSatelliteBody.addShape(moonSatelliteShape2);
@@ -578,11 +514,11 @@ export default class ExplorerSet {
     // Add UFO body
     const ufoShape = new CANNON.Cylinder(2.8, 2.8, 0.5);
     const supportShape1 = new CANNON.Sphere(0.5);
-    const supportShape2 = new CANNON.Sphere(0.9);
+    const supportShape2 = new CANNON.Sphere(0.95);
 
     this.ufoBody = new CANNON.Body({
       mass: ufoMass,
-      material: this.defaultContactMaterial,
+      material: this.defaultMaterial,
     });
 
     this.ufoBody.addShape(ufoShape);
@@ -616,12 +552,6 @@ export default class ExplorerSet {
     // Update right front wheel physics
     this.wheelRFMesh.position.copy(this.wheelRFBody.position);
     this.wheelRFMesh.quaternion.copy(this.wheelRFBody.quaternion);
-    // Update left middle wheel physics
-    this.wheelLMMesh.position.copy(this.wheelLMBody.position);
-    this.wheelLMMesh.quaternion.copy(this.wheelLMBody.quaternion);
-    // Update right middle wheel physics
-    this.wheelRMMesh.position.copy(this.wheelRMBody.position);
-    this.wheelRMMesh.quaternion.copy(this.wheelRMBody.quaternion);
     // Update left back wheel physics
     this.wheelLBMesh.position.copy(this.wheelLBBody.position);
     this.wheelLBMesh.quaternion.copy(this.wheelLBBody.quaternion);

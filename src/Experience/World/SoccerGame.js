@@ -3,11 +3,11 @@ import * as CANNON from "cannon-es";
 import Experience from "../Experience";
 
 export default class SoccerGame {
-  constructor(defaultContactMaterial, physicsWorld, applyRotation) {
+  constructor(defaultMaterial, physicsWorld, applyRotation) {
     this.experience = new Experience();
     this.scene = this.experience.scene;
     this.resources = this.experience.resources;
-    this.defaultContactMaterial = defaultContactMaterial;
+    this.defaultMaterial = defaultMaterial;
     this.physicsWorld = physicsWorld;
     this.upAxis = new CANNON.Vec3(0, 1, 0);
     this.applyRotation = applyRotation;
@@ -466,9 +466,9 @@ export default class SoccerGame {
       this.grassBodySet[1].position
     );
 
-    this.grassBodySet[2].position.x = -14;
-    this.grassBodySet[2].position.y = 4;
-    this.grassBodySet[2].position.z = 6;
+    this.grassBodySet[2].position.x = -13.2;
+    this.grassBodySet[2].position.y = -1;
+    this.grassBodySet[2].position.z = 8;
     this.grassBodySet[2].quaternion.setFromVectors(
       this.upAxis,
       this.grassBodySet[2].position

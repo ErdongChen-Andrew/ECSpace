@@ -5,16 +5,18 @@ import dustVertex from "../Shaders/dustVertex";
 import dustFragment from "../Shaders/dustFragment";
 
 export default class Planet {
-  constructor(defaultContactMaterial, physicsWorld) {
+  constructor(defaultMaterial, physicsWorld) {
     this.experience = new Experience();
     this.scene = this.experience.scene;
     this.resources = this.experience.resources;
     this.debug = this.experience.debug;
     this.clock = new THREE.Clock();
-    this.defaultContactMaterial = defaultContactMaterial;
+    this.defaultMaterial = defaultMaterial;
     this.physicsWorld = physicsWorld;
     this.upAxis = new CANNON.Vec3(0, 1, 0);
     this.planetRadius = 15;
+    this.moonInitialVelocity = 28;
+    this.moonDistance = 130;
     this.miniPlanetSet = [];
 
     // Debug
@@ -23,10 +25,22 @@ export default class Planet {
       this.debugFolder = this.debug.ui.addFolder("dust particles");
     }
 
+    // Main planet model and physics
     this.setPlanet();
+    this.setPlanetPhysics();
+
+    // Moon model and physics
     this.setMoon();
+    this.setMoonPhysics();
+
+    // Dust mesh
     this.setDust();
+
+    // Mini Planets mesh
     this.setMiniPlanet();
+
+    // Air walls physics
+    this.setBoarderPhysics()
   }
 
   /**
@@ -146,7 +160,7 @@ export default class Planet {
     for (let i = 0; i < 24; i++) {
       miniPlanetSize = Math.max(1.5, 2 * Math.random());
       miniPlanetPositiion.set(
-        Math.max(300, 400 * Math.random()),
+        Math.max(300, 500 * Math.random()),
         Math.PI * 2 * Math.random(),
         Math.PI * 2 * Math.random()
       );
@@ -166,6 +180,59 @@ export default class Planet {
     }
   }
 
+  /**
+   * Physics setup
+   */
+  // Main planet physics setup
+  setPlanetPhysics() {
+    const planetShape = new CANNON.Sphere(this.planetRadius);
+    const planetLandShape = new CANNON.Cylinder(7, 5, 3);
+
+    this.planetBody = new CANNON.Body({
+      shape: planetShape,
+      material: this.defaultMaterial,
+    });
+
+    this.planetBody.addShape(planetLandShape, new CANNON.Vec3(0, -14.3, 0));
+
+    this.physicsWorld.addBody(this.planetBody);
+  }
+
+  // Moon physics setup
+  setMoonPhysics() {
+    const moonShape = new CANNON.Sphere(3);
+    this.moonBody = new CANNON.Body({
+      mass: 1,
+      shape: moonShape,
+      material: this.defaultMaterial,
+    });
+
+    this.moonBody.position.set(this.moonDistance, 0, this.moonDistance);
+
+    this.physicsWorld.addBody(this.moonBody);
+
+    // Apply initial velocity
+    this.moonBody.velocity = new CANNON.Vec3(0, this.moonInitialVelocity, 0);
+  }
+
+  // Create invisible outside boarders physics
+  setBoarderPhysics() {
+    const boarderShape1 = new CANNON.Box(new CANNON.Vec3(150, 1, 150));
+    const boarderShape2 = new CANNON.Box(new CANNON.Vec3(150, 150, 1));
+    const boarderShape3 = new CANNON.Box(new CANNON.Vec3(1, 150, 150));
+
+    const boarderBody = new CANNON.Body({ mass: 0 });
+
+    boarderBody.addShape(boarderShape1, new CANNON.Vec3(0, 150, 0));
+    boarderBody.addShape(boarderShape1, new CANNON.Vec3(0, -150, 0));
+    boarderBody.addShape(boarderShape2, new CANNON.Vec3(0, 0, 150));
+    boarderBody.addShape(boarderShape2, new CANNON.Vec3(0, 0, -150));
+    boarderBody.addShape(boarderShape3, new CANNON.Vec3(150, 0, 0));
+    boarderBody.addShape(boarderShape3, new CANNON.Vec3(-150, 0, 0));
+
+    this.physicsWorld.addBody(boarderBody);
+  }
+
   resize() {
     this.dustMesh.material.uniforms.uPixelRatio.value = Math.min(
       window.devicePixelRatio,
@@ -176,6 +243,12 @@ export default class Planet {
   update() {
     const elapsedTime = this.clock.getElapsedTime();
     this.dustMesh.material.uniforms.uTime.value = elapsedTime;
+
+    /**
+     * Moon physics update
+     */
+    this.moonMesh.position.copy(this.moonBody.position);
+    this.moonMesh.quaternion.copy(this.moonBody.quaternion);
 
     this.miniPlanetSet.forEach((item) => {
       item.rotation.x = ((elapsedTime / 10) * item.position.z) / 100;

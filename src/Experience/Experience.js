@@ -7,11 +7,11 @@ import World from "./World/World";
 import Resource from "./Utils/Resources";
 import Debug from "./Utils/Debug";
 import sources from "./sources.js";
-import Planet from "./World/Planet"
+import Planet from "./World/Planet";
 
 let instance = null;
 
-export default class Experience{
+export default class Experience {
   constructor(canvas) {
     if (instance) {
       return instance;
@@ -43,12 +43,16 @@ export default class Experience{
     this.time.on("tick", () => {
       this.update();
     });
+
+    // Creater
+    this.creater =
+      "Creater: Erdong Chen (Andrew) @ Richmond, British Columbia, Canada";
   }
 
   resize() {
     this.camera.resize();
     this.renderer.resize();
-    this.world.planet.resize()
+    this.world.planet.resize();
   }
 
   update() {

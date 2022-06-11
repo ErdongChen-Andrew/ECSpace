@@ -66,11 +66,6 @@ export default [
     type: "texture",
     path: "/textures/5F5F5F_BDBDBD_A4A4A4_9C9C9C-512px.png",
   },
-  // {
-  //   name: "soccerWhiteMatcapTexture",
-  //   type: "texture",
-  //   path: "/textures/EAEAEA_B5B5B5_CCCCCC_D4D4D4-512px.png",
-  // },
   {
     name: "soccerGoalModel",
     type: "gltfModel",
@@ -125,6 +120,11 @@ export default [
     name: "tableDrawerMatcapTexture",
     type: "texture",
     path: "/textures/EAEAEA_B5B5B5_CCCCCC_D4D4D4-512px.png",
+  },
+  {
+    name: "monitorScreenTexture",
+    type: "texture",
+    path: "/textures/Pics/monitorScreen.png",
   },
   {
     name: "laptopModel",
@@ -282,6 +282,46 @@ export default [
     path: "/models/shelf.glb",
   },
   {
+    name: "project001Model",
+    type: "gltfModel",
+    path: "/models/project001.glb",
+  },
+  {
+    name: "project002Model",
+    type: "gltfModel",
+    path: "/models/project002.glb",
+  },
+  {
+    name: "project003Model",
+    type: "gltfModel",
+    path: "/models/project003.glb",
+  },
+  {
+    name: "project004Model",
+    type: "gltfModel",
+    path: "/models/project004.glb",
+  },
+  {
+    name: "project001Texture",
+    type: "texture",
+    path: "/textures/Pics/SpaceTourism.png",
+  },
+  {
+    name: "project002Texture",
+    type: "texture",
+    path: "/textures/Pics/MiniCyberpunk.png",
+  },
+  {
+    name: "project003Texture",
+    type: "texture",
+    path: "/textures/Pics/Sci-FiCorridor.png",
+  },
+  {
+    name: "project004Texture",
+    type: "texture",
+    path: "/textures/Pics/TikiShaman.png",
+  },
+  {
     name: "legoModel",
     type: "gltfModel",
     path: "/models/lego.glb",
@@ -385,6 +425,11 @@ export default [
     name: "miniPlanetMatcapTexture012",
     type: "texture",
     path: "/textures/miniPlanetTexture/D0CCCB_524D50_928891_727581-512px.png",
+  },
+  {
+    name: "indicatorModel",
+    type: "gltfModel",
+    path: "/models/indicator.glb",
   },
   {
     name: "shadowMap",
