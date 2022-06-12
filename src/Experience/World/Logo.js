@@ -1,10 +1,13 @@
 import * as THREE from "three";
+import * as CANNON from "cannon-es";
 import Experience from "../Experience";
 
 export default class Logo {
-  constructor() {
+  constructor(defaultMaterial, physicsWorld) {
     this.experience = new Experience();
     this.scene = this.experience.scene;
+    this.defaultMaterial = defaultMaterial;
+    this.physicsWorld = physicsWorld;
     this.resources = this.experience.resources;
     this.clock = new THREE.Clock();
 
@@ -17,6 +20,7 @@ export default class Logo {
     this.logoTextTextture.encoding = THREE.sRGBEncoding;
 
     this.setLogo();
+    this.setLogoPhysics();
   }
 
   setLogo() {
@@ -34,6 +38,16 @@ export default class Logo {
     this.scene.add(this.logoModel);
   }
 
+  setLogoPhysics() {
+    this.logoShape = new CANNON.Sphere(2);
+    this.logoBody = new CANNON.Body({
+      mass: 1,
+      material: this.defaultMaterial,
+    });
+    this.logoBody.addShape(this.logoShape);
+    this.physicsWorld.addBody(this.logoBody);
+  }
+
   update(logoOffset) {
     const elapsedTime = this.clock.getElapsedTime();
     if (logoOffset < 6) {
@@ -42,5 +56,9 @@ export default class Logo {
     } else {
       this.logoModel.position.z = 0.5 * Math.sin(elapsedTime / 1.2) + 18;
     }
+
+    // Update logo body to follow logo model position
+    this.logoBody.position.copy(this.logoModel.position);
+    this.logoBody.quaternion.copy(this.logoModel.quaternion);
   }
 }

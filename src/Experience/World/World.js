@@ -1,5 +1,6 @@
 import * as CANNON from "cannon-es";
 import * as THREE from "three";
+import gsap from "gsap";
 import CannonDebugger from "cannon-es-debugger";
 import Experience from "../Experience";
 import Environment from "./Environment";
@@ -136,7 +137,7 @@ export default class World {
        * Logo Setups
        */
       this.astronautDistanceToLogo = null;
-      this.logoSet = new Logo();
+      this.logoSet = new Logo(this.defaultMaterial, this.physicsWorld);
       this.logoMesh = this.logoSet.logoModel;
       this.logoFixedPosition = new THREE.Vector3(0, 0, 18);
       this.logoMeshSpherical = new THREE.Spherical();
@@ -222,6 +223,7 @@ export default class World {
       // Shelf setups
       this.shelfBody = this.roomSet.shelfBody;
       this.shelfModel = this.roomSet.shelfGroup;
+      this.shelfTriggerBody = this.roomSet.shelfTriggerBody;
       this.shelfBodySpherical = new THREE.Spherical();
       this.shelfXAxis = new THREE.Vector3();
       this.shelfYAxis = new THREE.Vector3();
@@ -269,12 +271,16 @@ export default class World {
 
       // Logo indicator setups
       this.logoIndicator = this.indicatorModel.clone();
+      this.logoIndicator.children[0].material = this.indicatorMaterial.clone();
       this.logoIndicator.children[0].scale.set(4, 4, 0.5);
       // UFO indicator setups
       this.ufoIndicator = this.indicatorModel.clone();
+      this.ufoIndicator.children[0].material = this.indicatorMaterial.clone();
       this.ufoIndicator.children[0].scale.set(4, 4, 0.5);
       // Projects shelf indicator setups
       this.projectsIndicator = this.indicatorModel.clone();
+      this.projectsIndicator.children[0].material =
+        this.indicatorMaterial.clone();
       this.projectsIndicator.children[0].scale.set(3.5, 3.5, 0.5);
 
       this.scene.add(
@@ -283,19 +289,21 @@ export default class World {
         this.projectsIndicator
       );
 
-      this.updateLogoIndicator();
+      this.logoIndicatorSetup();
       this.setAstronautPhysics();
       this.setPlayerControls();
       this.setIdleAnimationTimer();
       this.setCamera();
-      this.setFog()
+      this.setFog();
+
+      this.shelfTriggerEvent();
     });
   }
 
   /**
    * Update logo indicator to logo position
    */
-  updateLogoIndicator() {
+  logoIndicatorSetup() {
     this.logoMeshSpherical.setFromVector3(this.logoMesh.position);
     this.logoIndicator.position.copy(
       this.emptyVec3.setFromSphericalCoords(
@@ -510,11 +518,34 @@ export default class World {
   /**
    * Set up space fog
    */
-  setFog(){
+  setFog() {
     const color = 0x333;
     const near = 50;
     const far = 500;
     this.scene.fog = new THREE.Fog(color, near, far);
+  }
+
+  /**
+   * Set up trigger event when player enter / leave shelf area
+   */
+  shelfTriggerEvent() {
+    // Trigger event when player close to shelf
+    this.shelfTriggerBody.addEventListener("collide", (e) => {
+      // astronaut body id is 37
+      if (e.body === this.astronautBody) {
+        console.log("enter");
+        // this.camera.instance.position.lerp(this.shelfCamPosition, 0.03);
+      }
+    });
+    this.physicsWorld.addEventListener("endContact", (e) => {
+      // astronaut body id is 37
+      if (
+        (e.bodyA === this.astronautBody && e.bodyB === this.shelfTriggerBody) ||
+        (e.bodyB === this.astronautBody && e.bodyA === this.shelfTriggerBody)
+      ) {
+        console.log("leave");
+      }
+    });
   }
 
   /**
@@ -531,6 +562,17 @@ export default class World {
         this.astronautDistanceToLogo = this.astronautMesh.position.distanceTo(
           this.logoFixedPosition
         );
+      }
+
+      // If player is near logo, show the indicator
+      if (this.logoMesh.position.distanceTo(this.astronautMesh.position) > 8) {
+        if (this.logoIndicator.children[0].material.opacity > 0) {
+          this.logoIndicator.children[0].material.opacity -= 0.05;
+        }
+      } else {
+        if (this.logoIndicator.children[0].material.opacity < 0.5) {
+          this.logoIndicator.children[0].material.opacity += 0.05;
+        }
       }
     }
 
@@ -602,7 +644,7 @@ export default class World {
         this.ufoBody.force,
         this.ufoBody.mass
       );
-      // Update projects indicator to follow the shelf
+      // Update ufo indicator to follow the ufo
       this.ufoBodySpherical.setFromVector3(this.ufoBody.position);
       this.ufoIndicator.position.copy(
         this.emptyVec3.setFromSphericalCoords(
@@ -613,6 +655,17 @@ export default class World {
       );
       // Upright the indicator
       this.ufoIndicator.lookAt(this.origin);
+
+      // If player is near ufo, show the indicator
+      if (this.ufoBody.position.distanceTo(this.astronautMesh.position) > 8) {
+        if (this.ufoIndicator.children[0].material.opacity > 0) {
+          this.ufoIndicator.children[0].material.opacity -= 0.05;
+        }
+      } else {
+        if (this.ufoIndicator.children[0].material.opacity < 0.5) {
+          this.ufoIndicator.children[0].material.opacity += 0.05;
+        }
+      }
     }
 
     // Soccer game update
@@ -797,10 +850,17 @@ export default class World {
         this.shelfYAxis,
         this.shelfZAxis
       );
-      if (this.shelfYAxis.angleTo(this.shelfModel.position) > 1) {
-        this.scene.remove(this.projectsIndicator);
+      if (
+        this.shelfYAxis.angleTo(this.shelfModel.position) > 1 ||
+        this.shelfModel.position.distanceTo(this.astronautMesh.position) > 8
+      ) {
+        if (this.projectsIndicator.children[0].material.opacity > 0) {
+          this.projectsIndicator.children[0].material.opacity -= 0.05;
+        }
       } else {
-        this.scene.add(this.projectsIndicator);
+        if (this.projectsIndicator.children[0].material.opacity < 0.5) {
+          this.projectsIndicator.children[0].material.opacity += 0.05;
+        }
       }
 
       //Apply center gravity to lego car
@@ -839,18 +899,6 @@ export default class World {
           this.astronautBody.position.y * this.astronautBody.position.y +
           this.astronautBody.position.z * this.astronautBody.position.z
       );
-
-      // Set asronaut body spherical cordinate from player plate position
-      // this.astronautBodySpherical.setFromVector3(
-      //   this.playerPlate.getWorldPosition(this.emptyVec3)
-      // );
-      // this.astronautBody.position.copy(
-      //   this.emptyVec3.setFromSphericalCoords(
-      //     this.astronautToOrigin,
-      //     this.astronautBodySpherical.phi,
-      //     this.astronautBodySpherical.theta
-      //   )
-      // );
 
       // Match astronaut mash to follow physic body
       this.astronautMesh.position.copy(this.astronautBody.position);

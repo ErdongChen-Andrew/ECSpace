@@ -9,6 +9,7 @@ export default class RoomSet {
     this.scene = this.experience.scene;
     this.sizes = this.experience.sizes;
     this.resources = this.experience.resources;
+    this.camera = this.experience.camera;
     this.defaultMaterial = defaultMaterial;
     this.physicsWorld = physicsWorld;
     this.upAxis = new CANNON.Vec3(0, 1, 0);
@@ -162,7 +163,7 @@ export default class RoomSet {
     this.chromeGreenMaterial = new THREE.MeshMatcapMaterial();
     this.chromeGreenTextures = this.resources.items.treeMatcapTexture;
     this.chromeYellowTextures.encoding = THREE.sRGBEncoding;
-    
+
     this.project001Texture = this.resources.items.project001Texture;
     this.project001Texture.encoding = THREE.sRGBEncoding;
     this.project001Texture.generateMipmaps = false;
@@ -1156,7 +1157,13 @@ export default class RoomSet {
     this.shelfBody.addShape(supportShape, new CANNON.Vec3(2.5, -1, -0.5));
     this.shelfBody.addShape(supportShape, new CANNON.Vec3(-2.5, -1, -0.5));
 
+    // Set up shelf trigger body
+    const shelfTriggerShape = new CANNON.Cylinder(3.5, 3.5, 2);
+    this.shelfTriggerBody = new CANNON.Body({ isTrigger: true });
+    this.shelfTriggerBody.addShape(shelfTriggerShape);
+
     this.physicsWorld.addBody(this.shelfBody);
+    this.physicsWorld.addBody(this.shelfTriggerBody);
 
     // set position for the shelf
     this.shelfBody.position.x = 12;
@@ -1279,6 +1286,8 @@ export default class RoomSet {
      */
     this.shelfGroup.position.copy(this.shelfBody.position);
     this.shelfGroup.quaternion.copy(this.shelfBody.quaternion);
+    this.shelfTriggerBody.position.copy(this.shelfBody.position);
+    this.shelfTriggerBody.quaternion.copy(this.shelfBody.quaternion);
 
     /**
      * Lego car physics update
