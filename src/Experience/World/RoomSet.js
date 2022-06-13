@@ -562,16 +562,23 @@ export default class RoomSet {
     this.project002Model = this.resources.items.project002Model.scene;
     this.project003Model = this.resources.items.project003Model.scene;
     this.project004Model = this.resources.items.project004Model.scene;
+    this.projectsSet = [
+      this.project001Model,
+      this.project002Model,
+      this.project003Model,
+      this.project004Model,
+    ];
 
     // At camera viewing position box
     this.shelfCamPosition = new THREE.Mesh(
       new THREE.BoxGeometry(0.1, 0.1, 0.1),
       new THREE.MeshBasicMaterial({
         transparent: true,
-        // opacity: 0,
+        opacity: 0,
       })
     );
     this.shelfCamPosition.position.z = -5;
+    this.shelfCamPosition.position.y = 0.5;
 
     // Shelf mesh setups
     this.shelfModel.traverse((child) => {

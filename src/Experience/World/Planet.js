@@ -75,12 +75,16 @@ export default class Planet {
   setMoon() {
     const moonTextures = this.resources.items.moonMatcapTexture;
     moonTextures.encoding = THREE.sRGBEncoding;
-    const moonGeometry = new THREE.SphereGeometry(3, 20, 20);
-    const material = new THREE.MeshMatcapMaterial({
-      matcap: moonTextures,
+
+    this.moonModel = this.resources.items.moonModel.scene;
+    this.moonModel.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+          child.material = new THREE.MeshMatcapMaterial({
+            matcap: moonTextures,
+          });
+      }
     });
-    this.moonMesh = new THREE.Mesh(moonGeometry, material);
-    this.scene.add(this.moonMesh);
+    this.scene.add(this.moonModel);
   }
 
   setDust() {
@@ -158,7 +162,7 @@ export default class Planet {
     });
 
     for (let i = 0; i < 24; i++) {
-      miniPlanetSize = Math.max(1.5, 2 * Math.random());
+      miniPlanetSize = Math.max(1.5, 3 * Math.random());
       miniPlanetPositiion.set(
         Math.max(300, 500 * Math.random()),
         Math.PI * 2 * Math.random(),
@@ -200,7 +204,7 @@ export default class Planet {
 
   // Moon physics setup
   setMoonPhysics() {
-    const moonShape = new CANNON.Sphere(3);
+    const moonShape = new CANNON.Sphere(3.2);
     this.moonBody = new CANNON.Body({
       mass: 1,
       shape: moonShape,
@@ -247,8 +251,8 @@ export default class Planet {
     /**
      * Moon physics update
      */
-    this.moonMesh.position.copy(this.moonBody.position);
-    this.moonMesh.quaternion.copy(this.moonBody.quaternion);
+    this.moonModel.position.copy(this.moonBody.position);
+    this.moonModel.quaternion.copy(this.moonBody.quaternion);
 
     this.miniPlanetSet.forEach((item) => {
       item.rotation.x = ((elapsedTime / 10) * item.position.z) / 100;

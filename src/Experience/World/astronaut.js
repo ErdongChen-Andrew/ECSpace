@@ -72,6 +72,27 @@ export default class Astronaut {
     });
   }
 
+  hideAstronautModel() {
+    if (this.model) {
+      this.model.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.material.transparent = true;
+            child.material.opacity = 0;
+        }
+      });
+    }
+  }
+
+  showAstronautModel() {
+    if (this.model) {
+      this.model.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.material.opacity = 1;
+        }
+      });
+    }
+  }
+
   setAnimation() {
     this.animation = {};
     this.animation.mixer = new THREE.AnimationMixer(this.model);

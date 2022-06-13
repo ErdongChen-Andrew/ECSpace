@@ -12,6 +12,11 @@ export default [
     ],
   },
   {
+    name: "moonModel",
+    type: "gltfModel",
+    path: "/models/moon.glb",
+  },
+  {
     name: "planetModel",
     type: "gltfModel",
     path: "/models/planet.glb",

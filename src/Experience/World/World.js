@@ -18,6 +18,7 @@ export default class World {
     this.debugObejcts = {};
     this.camera = this.experience.camera;
     this.scene = this.experience.scene;
+    this.sizes = this.experience.sizes;
     this.time = this.experience.time;
     this.resources = this.experience.resources;
     this.emptyVec3 = new THREE.Vector3();
@@ -223,7 +224,22 @@ export default class World {
       // Shelf setups
       this.shelfBody = this.roomSet.shelfBody;
       this.shelfModel = this.roomSet.shelfGroup;
+      this.projectsSet = this.roomSet.projectsSet;
+      this.project001Position = new THREE.Vector3().copy(
+        this.roomSet.projectsSet[0].children[0].position
+      );
+      this.project002Position = new THREE.Vector3().copy(
+        this.roomSet.projectsSet[1].children[0].position
+      );
+      this.project003Position = new THREE.Vector3().copy(
+        this.roomSet.projectsSet[2].children[0].position
+      );
+      this.project004Position = new THREE.Vector3().copy(
+        this.roomSet.projectsSet[3].children[0].position
+      );
+      this.projectFocusPosition = new THREE.Vector3(0, 0, -2);
       this.shelfTriggerBody = this.roomSet.shelfTriggerBody;
+      this.shelfCamPosition = this.roomSet.shelfCamPosition;
       this.shelfBodySpherical = new THREE.Spherical();
       this.shelfXAxis = new THREE.Vector3();
       this.shelfYAxis = new THREE.Vector3();
@@ -273,21 +289,73 @@ export default class World {
       this.logoIndicator = this.indicatorModel.clone();
       this.logoIndicator.children[0].material = this.indicatorMaterial.clone();
       this.logoIndicator.children[0].scale.set(4, 4, 0.5);
+      this.astronautAtLogo = false;
       // UFO indicator setups
       this.ufoIndicator = this.indicatorModel.clone();
       this.ufoIndicator.children[0].material = this.indicatorMaterial.clone();
       this.ufoIndicator.children[0].scale.set(4, 4, 0.5);
+      this.astronautAtUFO = false;
       // Projects shelf indicator setups
       this.projectsIndicator = this.indicatorModel.clone();
       this.projectsIndicator.children[0].material =
         this.indicatorMaterial.clone();
       this.projectsIndicator.children[0].scale.set(3.5, 3.5, 0.5);
+      this.astronautAtShelf = false;
+      this.ableToPressF = false;
+      this.pressedF = false;
 
       this.scene.add(
         this.logoIndicator,
         this.ufoIndicator,
         this.projectsIndicator
       );
+
+      /**
+       * Mouse move and click setups
+       */
+      this.mouse = new THREE.Vector2();
+      this.currentIntersect = false;
+      window.addEventListener("mousemove", (e) => {
+        this.mouse.x = (e.clientX / this.sizes.width) * 2 - 1;
+        this.mouse.y = -(e.clientY / this.sizes.height) * 2 + 1;
+      });
+      window.addEventListener("click", (e) => {
+        if (this.currentIntersect) {
+          switch (this.currentIntersect.object.name) {
+            case "projectPic":
+              window
+                .open("https://threejs-space-tourism.herokuapp.com/", "_blank")
+                .focus();
+              break;
+            case "projectPic001":
+              window
+                .open("https://threejs-minicyberpunk.vercel.app/", "_blank")
+                .focus();
+              break;
+            case "projectPic002":
+              window
+                .open(
+                  "https://sketchfab.com/3d-models/sci-fi-corrido-polygon-runway-b08aa4d243bc43a083b6a8dcedb4d4a8",
+                  "_blank"
+                )
+                .focus();
+              break;
+            case "projectPic003":
+              window
+                .open(
+                  "https://sketchfab.com/3d-models/tikishaman-polygon-runway-87fd863a5cc542f0a99d96fffb2dcf62",
+                  "_blank"
+                )
+                .focus();
+              break;
+          }
+        }
+      });
+
+      /**
+       * Raycaster
+       */
+      this.raycaster = new THREE.Raycaster();
 
       this.logoIndicatorSetup();
       this.setAstronautPhysics();
@@ -482,26 +550,36 @@ export default class World {
         this.keyMap[e.code] = e.type === "keydown";
       }
     });
+    // pressed F trigger special event
+    document.addEventListener("keypress", (e) => {
+      if (this.ableToPressF) {
+        if (e.code === "KeyF") {
+          this.pressedF = !this.pressedF;
+        }
+      }
+    });
   }
 
   /**
    * Detact if nothing moves on screen, then play different idle animation
    */
   setIdleAnimationTimer() {
-    let countTime;
-    this.playIdleAnimation = false;
-
-    const resetCountTime = () => {
+    if (!this.pressedF) {
+      let countTime;
       this.playIdleAnimation = false;
-      clearTimeout(countTime);
-      countTime = setTimeout(() => {
-        this.playIdleAnimation = true;
-      }, 60000);
-    };
 
-    window.onload = resetCountTime;
-    document.onmousemove = resetCountTime;
-    document.onkeydown = resetCountTime;
+      const resetCountTime = () => {
+        this.playIdleAnimation = false;
+        clearTimeout(countTime);
+        countTime = setTimeout(() => {
+          this.playIdleAnimation = true;
+        }, 60000);
+      };
+
+      window.onload = resetCountTime;
+      document.onmousemove = resetCountTime;
+      document.onkeydown = resetCountTime;
+    }
   }
 
   /**
@@ -533,8 +611,8 @@ export default class World {
     this.shelfTriggerBody.addEventListener("collide", (e) => {
       // astronaut body id is 37
       if (e.body === this.astronautBody) {
-        console.log("enter");
-        // this.camera.instance.position.lerp(this.shelfCamPosition, 0.03);
+        this.astronautAtShelf = true;
+        this.ableToPressF = true;
       }
     });
     this.physicsWorld.addEventListener("endContact", (e) => {
@@ -543,7 +621,8 @@ export default class World {
         (e.bodyA === this.astronautBody && e.bodyB === this.shelfTriggerBody) ||
         (e.bodyB === this.astronautBody && e.bodyA === this.shelfTriggerBody)
       ) {
-        console.log("leave");
+        this.astronautAtShelf = false;
+        this.ableToPressF = false;
       }
     });
   }
@@ -833,6 +912,17 @@ export default class World {
         this.shelfBody.mass
       );
 
+      //Apply center gravity to lego car
+      this.legoBody.force = this.applyGForce(
+        this.gravityDirection,
+        this.legoBody.position,
+        this.legoBody.force,
+        this.legoBody.mass
+      );
+
+      /**
+       * Shelf indicator setups
+       */
       // Update projects indicator to follow the shelf
       this.shelfBodySpherical.setFromVector3(this.shelfBody.position);
       this.projectsIndicator.position.copy(
@@ -844,12 +934,13 @@ export default class World {
       );
       // Upright the indicator
       this.projectsIndicator.lookAt(this.origin);
-      // Detect is shelf lies down, then hide the indicator
+      // Get shelf model X,Y,Z local axises
       this.shelfModel.matrix.extractBasis(
         this.shelfXAxis,
         this.shelfYAxis,
         this.shelfZAxis
       );
+      // If shelf stand up right and player near the shelf, show the indicator
       if (
         this.shelfYAxis.angleTo(this.shelfModel.position) > 1 ||
         this.shelfModel.position.distanceTo(this.astronautMesh.position) > 8
@@ -862,14 +953,6 @@ export default class World {
           this.projectsIndicator.children[0].material.opacity += 0.05;
         }
       }
-
-      //Apply center gravity to lego car
-      this.legoBody.force = this.applyGForce(
-        this.gravityDirection,
-        this.legoBody.position,
-        this.legoBody.force,
-        this.legoBody.mass
-      );
     }
 
     // Update astronaut physics
@@ -920,80 +1003,89 @@ export default class World {
       );
 
       // Moving forward
-      if (this.keyMap["KeyW"]) {
-        if (this.astronautBody.velocity.length() > 3.5) {
-          this.astronautBody.velocity.copy(this.astronautBody.velocity);
-        } else {
-          this.astronautBody.velocity.copy(this.walkVelocityAndDir);
-        }
-        // update camera position when move forward
-        this.camCurrentPosition.lerp(this.camNewPosition, 0.03);
-        this.camCurrentPositionLookAt.lerp(this.camNewPositionLookAt, 0.03);
+      if (!this.pressedF) {
+        if (this.keyMap["KeyW"]) {
+          if (this.astronautBody.velocity.length() > 3.5) {
+            this.astronautBody.velocity.copy(this.astronautBody.velocity);
+          } else {
+            this.astronautBody.velocity.copy(this.walkVelocityAndDir);
+          }
+          // update camera position when move forward
+          this.camCurrentPosition.lerp(this.camNewPosition, 0.03);
+          this.camCurrentPositionLookAt.lerp(this.camNewPositionLookAt, 0.03);
 
-        this.camera.instance.position.copy(this.camCurrentPosition);
-        this.camera.instance.lookAt(this.camCurrentPositionLookAt);
-        if (!this.keyMap["Space"]) {
-          this.astronaut.animation.play("run");
-        }
-      }
-      // Moving backward
-      if (this.keyMap["KeyS"]) {
-        if (this.astronautBody.velocity.length() > 1.75) {
-          this.astronautBody.velocity.copy(this.astronautBody.velocity);
-        } else {
-          this.astronautBody.velocity.copy(this.backVelocityAndDir);
-        }
-        if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
-          this.astronaut.animation.play("walk");
-        }
-      }
-      // Turning left
-      if (this.keyMap["KeyA"]) {
-        this.playerGroup.rotateOnAxis(this.turnAxis, this.walkRad * 6);
-        if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
-          this.astronaut.animation.play("walk");
-        }
-      }
-      // Turning right
-      if (this.keyMap["KeyD"]) {
-        this.playerGroup.rotateOnAxis(this.turnAxis, -this.walkRad * 6);
-        if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
-          this.astronaut.animation.play("walk");
-        }
-      }
-      // Jumping event
-      if (this.keyMap["Space"] && this.astronautCollide && !this.spaceKeyDown) {
-        this.astronautBody.velocity.vadd(
-          this.jumpVelocityAndDir,
-          this.astronautBody.velocity
-        );
-
-        this.astronaut.animation.play("jump");
-
-        // Set astronaut collide back to false and space key down back to true
-        this.astronautCollide = false;
-        this.spaceKeyDown = true;
-      } else if (
-        !this.keyMap["KeyW"] &&
-        !this.keyMap["KeyS"] &&
-        !this.keyMap["KeyA"] &&
-        !this.keyMap["KeyD"] &&
-        !this.keyMap["Space"]
-      ) {
-        if (!this.playIdleAnimation && this.astronaut) {
-          this.astronaut.animation.play("idle2");
-        }
-        // Play idle animation when nothing moves on screen
-        else if (this.playIdleAnimation && this.astronaut) {
-          this.camCurrentPosition.lerp(
-            this.camIdlePosition.getWorldPosition(this.emptyVec3),
-            0.03
-          );
-          this.camCurrentPositionLookAt.lerp(this.astronautBody.position, 0.03);
-          // Camera movement
           this.camera.instance.position.copy(this.camCurrentPosition);
           this.camera.instance.lookAt(this.camCurrentPositionLookAt);
-          this.astronaut.animation.play("idle1");
+          if (!this.keyMap["Space"]) {
+            this.astronaut.animation.play("run");
+          }
+        }
+        // Moving backward
+        if (this.keyMap["KeyS"]) {
+          if (this.astronautBody.velocity.length() > 1.75) {
+            this.astronautBody.velocity.copy(this.astronautBody.velocity);
+          } else {
+            this.astronautBody.velocity.copy(this.backVelocityAndDir);
+          }
+          if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
+            this.astronaut.animation.play("walk");
+          }
+        }
+        // Turning left
+        if (this.keyMap["KeyA"]) {
+          this.playerGroup.rotateOnAxis(this.turnAxis, this.walkRad * 6);
+          if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
+            this.astronaut.animation.play("walk");
+          }
+        }
+        // Turning right
+        if (this.keyMap["KeyD"]) {
+          this.playerGroup.rotateOnAxis(this.turnAxis, -this.walkRad * 6);
+          if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
+            this.astronaut.animation.play("walk");
+          }
+        }
+        // Jumping event
+        if (
+          this.keyMap["Space"] &&
+          this.astronautCollide &&
+          !this.spaceKeyDown
+        ) {
+          this.astronautBody.velocity.vadd(
+            this.jumpVelocityAndDir,
+            this.astronautBody.velocity
+          );
+
+          this.astronaut.animation.play("jump");
+
+          // Set astronaut collide back to false and space key down back to true
+          this.astronautCollide = false;
+          this.spaceKeyDown = true;
+        } else if (
+          !this.keyMap["KeyW"] &&
+          !this.keyMap["KeyS"] &&
+          !this.keyMap["KeyA"] &&
+          !this.keyMap["KeyD"] &&
+          !this.keyMap["Space"]
+        ) {
+          if (!this.playIdleAnimation && this.astronaut) {
+            this.astronaut.animation.play("idle2");
+          }
+          // Play idle animation when nothing moves on screen
+          else if (this.playIdleAnimation && this.astronaut) {
+            this.camCurrentPosition.lerp(
+              this.camIdlePosition.getWorldPosition(this.emptyVec3),
+              0.03
+            );
+            this.camCurrentPositionLookAt.lerp(
+              this.astronautBody.position,
+              0.03
+            );
+            // Camera movement
+            this.camera.instance.position.copy(this.camCurrentPosition);
+            this.camera.instance.lookAt(this.camCurrentPositionLookAt);
+            this.astronaut.animation.play("idle1");
+          }
         }
       }
 
@@ -1046,8 +1138,71 @@ export default class World {
     );
 
     // Update camera up axis
-    if (this.astronaut) {
+    if (this.astronaut && !this.astronautAtShelf) {
       this.camera.instance.up.copy(this.astronautGravityDirection.scale(-1));
+    }
+
+    /**
+     * Project shelf visiting event
+     */
+    if (
+      this.astronautAtShelf &&
+      this.pressedF &&
+      this.projectsIndicator.children[0].material.opacity > 0
+    ) {
+      this.raycaster.setFromCamera(this.mouse, this.camera.instance);
+      const intersects = this.raycaster.intersectObjects(this.projectsSet);
+
+      if (intersects.length) {
+        if (!this.currentIntersect) {
+        }
+        this.currentIntersect = intersects[0];
+        if (
+          this.currentIntersect.object.name === "projectPic" ||
+          this.currentIntersect.object.name === "projectPic001" ||
+          this.currentIntersect.object.name === "projectPic002" ||
+          this.currentIntersect.object.name === "projectPic003"
+        ) {
+          this.currentIntersect.object.parent.scale.set(2, 2, 1);
+          this.currentIntersect.object.parent.position.lerp(
+            this.projectFocusPosition,
+            0.1
+          );
+        }
+      } else {
+        if (this.currentIntersect) {
+          if (this.currentIntersect.object.name === "chrome") {
+            this.currentIntersect.object.scale.set(1, 1, 1);
+            this.currentIntersect.object.position.copy(this.project001Position);
+          } else if (this.currentIntersect.object.name === "chrome001") {
+            this.currentIntersect.object.scale.set(1, 1, 1);
+            this.currentIntersect.object.position.copy(this.project002Position);
+          } else if (this.currentIntersect.object.name === "chrome002") {
+            this.currentIntersect.object.scale.set(1, 1, 1);
+            this.currentIntersect.object.position.copy(this.project003Position);
+          } else if (this.currentIntersect.object.name === "chrome003") {
+            this.currentIntersect.object.scale.set(1, 1, 1);
+            this.currentIntersect.object.position.copy(this.project004Position);
+          }
+        }
+        this.currentIntersect = null;
+      }
+
+      // Move camera focus on the shelf if player at the shelf and pressed F
+      this.camera.instance.position.lerp(
+        this.shelfCamPosition.getWorldPosition(this.emptyVec3),
+        0.05
+      );
+      this.camera.instance.lookAt(this.shelfModel.position);
+      this.camera.instance.up.copy(this.shelfYAxis);
+      this.astronaut.hideAstronautModel();
+      this.playerPlate.material.opacity = 0;
+    } else if (this.astronaut && !this.pressedF) {
+      // move camera back to original position if player pressed F again
+      this.camera.instance.position.lerp(this.camCurrentPosition, 0.07);
+      this.camera.instance.lookAt(this.camCurrentPositionLookAt);
+      this.camera.instance.up.copy(this.astronautGravityDirection.scale(-1));
+      this.astronaut.showAstronautModel();
     }
   }
 }
