@@ -43,26 +43,10 @@ export default class World {
     /**
      * Camera basic set up
      */
-    const invisibleCubeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-    const invisibleCubeMaterial = new THREE.MeshBasicMaterial({
-      transparent: true,
-      opacity: 0,
-    });
-    // Camera movement pre-setups
-    this.camIdlePosition = new THREE.Mesh();
-    this.camPosition = new THREE.Mesh();
-    this.camPositionLookAt = new THREE.Mesh();
     this.camNewPosition = new THREE.Vector3();
     this.camNewPositionLookAt = new THREE.Vector3();
     this.camCurrentPosition = new THREE.Vector3();
     this.camCurrentPositionLookAt = new THREE.Vector3();
-    // Camera pointers pre-setups
-    this.camIdlePosition.geometry = invisibleCubeGeo;
-    this.camIdlePosition.material = invisibleCubeMaterial;
-    this.camPosition.geometry = invisibleCubeGeo;
-    this.camPosition.material = invisibleCubeMaterial;
-    this.camPositionLookAt.geometry = invisibleCubeGeo;
-    this.camPositionLookAt.material = invisibleCubeMaterial;
 
     /**
      * Physics setup
@@ -131,8 +115,11 @@ export default class World {
 
       // Astronaut setup
       this.astronaut = new Astronaut();
-      this.astronautMesh = this.astronaut.model;
+      this.astronautMesh = this.astronaut.modelGroup;
       this.astronautGravityDirection = new CANNON.Vec3();
+      this.camIdlePosition = this.astronaut.camIdlePosition;
+      this.camPosition = this.astronaut.camPosition;
+      this.camPositionLookAt = this.astronaut.camPositionLookAt;
 
       /**
        * Logo Setups
@@ -225,6 +212,7 @@ export default class World {
       this.shelfBody = this.roomSet.shelfBody;
       this.shelfModel = this.roomSet.shelfGroup;
       this.projectsSet = this.roomSet.projectsSet;
+
       this.project001Position = new THREE.Vector3().copy(
         this.roomSet.projectsSet[0].children[0].position
       );
@@ -237,7 +225,7 @@ export default class World {
       this.project004Position = new THREE.Vector3().copy(
         this.roomSet.projectsSet[3].children[0].position
       );
-      this.projectFocusPosition = new THREE.Vector3(0, 0, -2);
+
       this.shelfTriggerBody = this.roomSet.shelfTriggerBody;
       this.shelfCamPosition = this.roomSet.shelfCamPosition;
       this.shelfBodySpherical = new THREE.Spherical();
@@ -271,7 +259,13 @@ export default class World {
 
       // UFO setups
       this.ufoBody = this.explorerSet.ufoBody;
+      this.ufoModel = this.explorerSet.ufoGroup;
+      this.ufoTriggerBody = this.explorerSet.ufoTriggerBody;
+      this.ufoCamPosition = this.explorerSet.ufoCamPosition;
       this.ufoBodySpherical = new THREE.Spherical();
+      this.ufoXAxis = new THREE.Vector3();
+      this.ufoYAxis = new THREE.Vector3();
+      this.ufoZAxis = new THREE.Vector3();
 
       /**
        * Indicator Setups
@@ -314,25 +308,31 @@ export default class World {
        * Mouse move and click setups
        */
       this.mouse = new THREE.Vector2();
-      this.currentIntersect = false;
+      this.currentIntersect = null;
+      // Getting mouse move position
       window.addEventListener("mousemove", (e) => {
         this.mouse.x = (e.clientX / this.sizes.width) * 2 - 1;
         this.mouse.y = -(e.clientY / this.sizes.height) * 2 + 1;
       });
+      // Mouse click event
       window.addEventListener("click", (e) => {
         if (this.currentIntersect) {
+          // Detect which project is been click and open a new tab to that project website
           switch (this.currentIntersect.object.name) {
             case "projectPic":
+            case "chrome":
               window
                 .open("https://threejs-space-tourism.herokuapp.com/", "_blank")
                 .focus();
               break;
             case "projectPic001":
+            case "chrome001":
               window
                 .open("https://threejs-minicyberpunk.vercel.app/", "_blank")
                 .focus();
               break;
             case "projectPic002":
+            case "chrome002":
               window
                 .open(
                   "https://sketchfab.com/3d-models/sci-fi-corrido-polygon-runway-b08aa4d243bc43a083b6a8dcedb4d4a8",
@@ -341,6 +341,7 @@ export default class World {
                 .focus();
               break;
             case "projectPic003":
+            case "chrome003":
               window
                 .open(
                   "https://sketchfab.com/3d-models/tikishaman-polygon-runway-87fd863a5cc542f0a99d96fffb2dcf62",
@@ -365,6 +366,7 @@ export default class World {
       this.setFog();
 
       this.shelfTriggerEvent();
+      this.ufoTriggerEvent();
     });
   }
 
@@ -501,33 +503,9 @@ export default class World {
         alphaMap: this.shadowMap,
       })
     );
-    this.playerPlate.position.y = this.planetRadius;
+    this.playerPlate.position.y = this.planetRadius + 0.05;
     this.playerPlate.rotation.x = -Math.PI / 2;
     this.playerGroup.add(this.playerPlate);
-
-    // set up idle cubes positions for idle cam position
-    this.camIdlePosition.position.set(
-      this.playerPlate.position.x + 2,
-      this.playerPlate.position.y + 2,
-      this.playerPlate.position.z + 8
-    );
-    // set up following invisible cubes positions
-    this.camPosition.position.set(
-      0,
-      this.playerPlate.position.y + 9,
-      this.playerPlate.position.z - 6
-    );
-    this.camPositionLookAt.position.set(
-      this.playerPlate.position.x,
-      this.playerPlate.position.y + 4.5,
-      this.playerPlate.position.z
-    );
-    // adding invisible cubes for latter setting up cam position, camera will lerp to camPosition.position and look at camPositionLookAt.position
-    this.playerGroup.add(
-      this.camIdlePosition,
-      this.camPosition,
-      this.camPositionLookAt
-    );
     this.scene.add(this.playerGroup);
 
     // handle keymap events
@@ -609,19 +587,146 @@ export default class World {
   shelfTriggerEvent() {
     // Trigger event when player close to shelf
     this.shelfTriggerBody.addEventListener("collide", (e) => {
-      // astronaut body id is 37
       if (e.body === this.astronautBody) {
         this.astronautAtShelf = true;
         this.ableToPressF = true;
       }
     });
     this.physicsWorld.addEventListener("endContact", (e) => {
-      // astronaut body id is 37
       if (
         (e.bodyA === this.astronautBody && e.bodyB === this.shelfTriggerBody) ||
         (e.bodyB === this.astronautBody && e.bodyA === this.shelfTriggerBody)
       ) {
         this.astronautAtShelf = false;
+        this.ableToPressF = false;
+      }
+    });
+  }
+
+  /**
+   * Rest the shelf to origin status
+   */
+  resetProjectShelf(currentIntersect) {
+    if (currentIntersect) {
+      // Change cursor back to normal
+      document.body.style.cursor = "default";
+      if (currentIntersect.object.name === "projectPic") {
+        gsap.to(currentIntersect.object.parent.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 1,
+        });
+        gsap.to(currentIntersect.object.parent.position, {
+          duration: 0.5,
+          x: this.project001Position.x,
+          y: this.project001Position.y,
+          z: this.project001Position.z,
+        });
+      } else if (currentIntersect.object.name === "chrome") {
+        gsap.to(currentIntersect.object.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 1,
+        });
+        gsap.to(currentIntersect.object.position, {
+          duration: 0.5,
+          x: this.project001Position.x,
+          y: this.project001Position.y,
+          z: this.project001Position.z,
+        });
+      } else if (currentIntersect.object.name === "projectPic001") {
+        gsap.to(currentIntersect.object.parent.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 1,
+        });
+        gsap.to(currentIntersect.object.parent.position, {
+          duration: 0.5,
+          x: this.project002Position.x,
+          y: this.project002Position.y,
+          z: this.project002Position.z,
+        });
+      } else if (currentIntersect.object.name === "chrome001") {
+        gsap.to(currentIntersect.object.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 1,
+        });
+        gsap.to(currentIntersect.object.position, {
+          duration: 0.5,
+          x: this.project002Position.x,
+          y: this.project002Position.y,
+          z: this.project002Position.z,
+        });
+      } else if (this.currentIntersect.object.name === "projectPic002") {
+        gsap.to(this.currentIntersect.object.parent.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 1,
+        });
+        gsap.to(this.currentIntersect.object.parent.position, {
+          duration: 0.5,
+          x: this.project003Position.x,
+          y: this.project003Position.y,
+          z: this.project003Position.z,
+        });
+      } else if (currentIntersect.object.name === "chrome002") {
+        gsap.to(currentIntersect.object.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 1,
+        });
+        gsap.to(currentIntersect.object.position, {
+          duration: 0.5,
+          x: this.project003Position.x,
+          y: this.project003Position.y,
+          z: this.project003Position.z,
+        });
+      } else if (currentIntersect.object.name === "projectPic003") {
+        gsap.to(currentIntersect.object.parent.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 1,
+        });
+        gsap.to(currentIntersect.object.parent.position, {
+          duration: 0.5,
+          x: this.project004Position.x,
+          y: this.project004Position.y,
+          z: this.project004Position.z,
+        });
+      } else if (currentIntersect.object.name === "chrome003") {
+        gsap.to(currentIntersect.object.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 1,
+        });
+        gsap.to(currentIntersect.object.position, {
+          duration: 0.5,
+          x: this.project004Position.x,
+          y: this.project004Position.y,
+          z: this.project004Position.z,
+        });
+      }
+    }
+  }
+
+  /**
+   * Set up trigger event when player enter / leave UFO area
+   */
+  ufoTriggerEvent() {
+    // Trigger event when player close to UFO
+    this.ufoTriggerBody.addEventListener("collide", (e) => {
+      if (e.body === this.astronautBody) {
+        this.astronautAtUFO = true;
+        this.ableToPressF = true;
+      }
+    });
+    this.physicsWorld.addEventListener("endContact", (e) => {
+      if (
+        (e.bodyA === this.astronautBody && e.bodyB === this.ufoTriggerBody) ||
+        (e.bodyB === this.astronautBody && e.bodyA === this.ufoTriggerBody)
+      ) {
+        this.astronautAtUFO = false;
         this.ableToPressF = false;
       }
     });
@@ -1132,59 +1237,89 @@ export default class World {
      * Camera update
      */
     // Update camera to follow astronaut position
-    this.camNewPosition.copy(this.camPosition.getWorldPosition(this.emptyVec3));
-    this.camNewPositionLookAt.copy(
-      this.camPositionLookAt.getWorldPosition(this.emptyVec3)
-    );
-
-    // Update camera up axis
-    if (this.astronaut && !this.astronautAtShelf) {
+    if (this.astronaut && !this.pressedF) {
+      this.camNewPosition.copy(
+        this.camPosition.getWorldPosition(this.emptyVec3)
+      );
+      this.camNewPositionLookAt.copy(
+        this.camPositionLookAt.getWorldPosition(this.emptyVec3)
+      );
       this.camera.instance.up.copy(this.astronautGravityDirection.scale(-1));
     }
 
     /**
      * Project shelf visiting event
      */
+    // If shelf lies down, stop all shelf event
+    if (
+      this.projectsIndicator &&
+      this.projectsIndicator.children[0].material.opacity < 0 &&
+      this.astronautAtShelf
+    ) {
+      this.astronautAtShelf = false;
+      this.ableToPressF = false;
+    }
+    // Trigger event when palyer is at shelf area and pressed F
     if (
       this.astronautAtShelf &&
       this.pressedF &&
       this.projectsIndicator.children[0].material.opacity > 0
     ) {
+      // Create raycaster alone current camera position and mouse position
       this.raycaster.setFromCamera(this.mouse, this.camera.instance);
       const intersects = this.raycaster.intersectObjects(this.projectsSet);
 
+      // Add hovering obejct to an array
       if (intersects.length) {
         if (!this.currentIntersect) {
-        }
-        this.currentIntersect = intersects[0];
-        if (
-          this.currentIntersect.object.name === "projectPic" ||
-          this.currentIntersect.object.name === "projectPic001" ||
-          this.currentIntersect.object.name === "projectPic002" ||
-          this.currentIntersect.object.name === "projectPic003"
-        ) {
-          this.currentIntersect.object.parent.scale.set(2, 2, 1);
-          this.currentIntersect.object.parent.position.lerp(
-            this.projectFocusPosition,
-            0.1
-          );
-        }
-      } else {
-        if (this.currentIntersect) {
-          if (this.currentIntersect.object.name === "chrome") {
-            this.currentIntersect.object.scale.set(1, 1, 1);
-            this.currentIntersect.object.position.copy(this.project001Position);
-          } else if (this.currentIntersect.object.name === "chrome001") {
-            this.currentIntersect.object.scale.set(1, 1, 1);
-            this.currentIntersect.object.position.copy(this.project002Position);
-          } else if (this.currentIntersect.object.name === "chrome002") {
-            this.currentIntersect.object.scale.set(1, 1, 1);
-            this.currentIntersect.object.position.copy(this.project003Position);
-          } else if (this.currentIntersect.object.name === "chrome003") {
-            this.currentIntersect.object.scale.set(1, 1, 1);
-            this.currentIntersect.object.position.copy(this.project004Position);
+          // Change cursor back to pointer
+          document.body.style.cursor = "pointer";
+          // Detect if hovering on project picture
+          if (
+            intersects[0].object.name === "projectPic" ||
+            intersects[0].object.name === "projectPic001" ||
+            intersects[0].object.name === "projectPic002" ||
+            intersects[0].object.name === "projectPic003"
+          ) {
+            this.currentIntersect = intersects[0];
+            // Scale up hovering object and zoom it toward to camera
+            gsap.to(this.currentIntersect.object.parent.position, {
+              duration: 0.5,
+              x: 0,
+              y: 0.2,
+              z: -2,
+            });
+            gsap.to(this.currentIntersect.object.parent.scale, {
+              duration: 0.5,
+              x: 2,
+              y: 2,
+            });
+          }
+          // Detect if hovering on project frame
+          else if (
+            intersects[0].object.name === "chrome" ||
+            intersects[0].object.name === "chrome001" ||
+            intersects[0].object.name === "chrome002" ||
+            intersects[0].object.name === "chrome003"
+          ) {
+            this.currentIntersect = intersects[0];
+            // Scale up hovering object and zoom it toward to camera
+            gsap.to(this.currentIntersect.object.position, {
+              duration: 0.5,
+              x: 0,
+              y: 0.2,
+              z: -2,
+            });
+            gsap.to(this.currentIntersect.object.scale, {
+              duration: 0.5,
+              x: 2,
+              y: 2,
+            });
           }
         }
+      } else {
+        // Move back the project box when mouse is leaving
+        this.resetProjectShelf(this.currentIntersect);
         this.currentIntersect = null;
       }
 
@@ -1195,14 +1330,65 @@ export default class World {
       );
       this.camera.instance.lookAt(this.shelfModel.position);
       this.camera.instance.up.copy(this.shelfYAxis);
-      this.astronaut.hideAstronautModel();
       this.playerPlate.material.opacity = 0;
-    } else if (this.astronaut && !this.pressedF) {
+    } 
+
+    /**
+     * UFO driving event
+     */
+    // Trigger event when palyer is at UFO area and pressed F
+    else if (this.astronautAtUFO && this.pressedF) {
+      this.ufoModel.matrix.extractBasis(
+        this.ufoXAxis,
+        this.ufoYAxis,
+        this.ufoZAxis
+      );
+      // Move camera focus on the ufo if player at the ufo and pressed F
+      this.camera.instance.position.lerp(
+        this.ufoCamPosition.getWorldPosition(this.emptyVec3),
+        0.05
+      );
+      this.camera.instance.lookAt(this.ufoModel.position);
+      this.camera.instance.up.copy(this.ufoYAxis);
+      if (this.ufoIndicator.children[0].material.opacity > 0) {
+        this.ufoIndicator.children[0].material.opacity -= 0.1;
+      }
+    }
+
+    /**
+     * Reset camera if none of event triggers
+     */
+    else if (
+      (this.astronaut && !this.pressedF) ||
+      this.astronautAtShelf === false ||
+      this.astronautAtLogo === false ||
+      this.astronautAtUFO === false
+    ) {
       // move camera back to original position if player pressed F again
       this.camera.instance.position.lerp(this.camCurrentPosition, 0.07);
       this.camera.instance.lookAt(this.camCurrentPositionLookAt);
       this.camera.instance.up.copy(this.astronautGravityDirection.scale(-1));
+    }
+
+    /**
+     * Hide / Show astronaut mesh and body when any trigger event happened
+     */
+    if (
+      (this.astronautAtShelf &&
+        this.pressedF &&
+        this.projectsIndicator.children[0].material.opacity > 0) ||
+      (this.astronautAtUFO && this.pressedF)
+    ) {
+      this.astronaut.hideAstronautModel();
+      this.physicsWorld.removeBody(this.astronautBody);
+    } else if (
+      (this.astronaut && !this.pressedF) ||
+      this.astronautAtShelf === false ||
+      this.astronautAtLogo === false ||
+      this.astronautAtUFO === false
+    ) {
       this.astronaut.showAstronautModel();
+      this.physicsWorld.addBody(this.astronautBody);
     }
   }
 }

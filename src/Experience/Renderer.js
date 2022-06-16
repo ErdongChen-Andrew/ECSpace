@@ -50,7 +50,7 @@ export default class Renderer {
     // Selecte what needs to be shown on TV
     this.resources.on("ready", () => {
       this.scene.clone().children.forEach((item) => {
-        if (item instanceof THREE.Points || item instanceof THREE.Mesh) {
+        if (item instanceof THREE.Points) {
           allNeededObjects.push(item);
         }
         item.children.forEach((items) => {
@@ -58,7 +58,7 @@ export default class Renderer {
             items.name === "ice" ||
             items.name === "land" ||
             items.name === "miniplanet" ||
-            items.name === "rig"
+            (items instanceof THREE.Group && items.children[0].name === "rig")
           ) {
             allNeededObjects.push(items);
           }

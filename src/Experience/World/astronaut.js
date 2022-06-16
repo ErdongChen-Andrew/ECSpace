@@ -21,16 +21,46 @@ export default class Astronaut {
     this.blueMatcapTexture =
       this.resources.items.astronautBlueLightMatcapTexture;
 
-    // Setup
+    /**
+     * Astonaut model setups
+     */
     this.resource = this.resources.items.astronautModel;
+    this.modelGroup = new THREE.Group();
+
+    /**
+     * Camera basic set up
+     */
+    const invisibleCubeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const invisibleCubeMaterial = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0,
+    });
+    // Camera movement pre-setups
+    this.camIdlePosition = new THREE.Mesh();
+    this.camPosition = new THREE.Mesh();
+    this.camPositionLookAt = new THREE.Mesh();
+    // Camera pointers pre-setups
+    this.camIdlePosition.geometry = invisibleCubeGeo;
+    this.camIdlePosition.material = invisibleCubeMaterial;
+    this.camPosition.geometry = invisibleCubeGeo;
+    this.camPosition.material = invisibleCubeMaterial;
+    this.camPositionLookAt.geometry = invisibleCubeGeo;
+    this.camPositionLookAt.material = invisibleCubeMaterial;
 
     this.setModel();
+    this.setCameraPosition();
     this.setAnimation();
   }
 
   setModel() {
     this.model = this.resource.scene;
-    this.scene.add(this.model);
+    this.modelGroup.add(
+      this.camIdlePosition,
+      this.camPosition,
+      this.camPositionLookAt,
+      this.model
+    );
+    this.scene.add(this.modelGroup);
 
     this.model.traverse((child) => {
       child.frustumCulled = false;
@@ -72,12 +102,32 @@ export default class Astronaut {
     });
   }
 
+  setCameraPosition() {
+    // set up idle cubes positions for idle cam position
+    this.camIdlePosition.position.set(
+      this.model.position.x + 2,
+      this.model.position.y +0.5,
+      this.model.position.z + 8
+    );
+    // set up following invisible cubes positions
+    this.camPosition.position.set(
+      0,
+      this.model.position.y + 7,
+      this.model.position.z - 6
+    );
+    this.camPositionLookAt.position.set(
+      this.model.position.x,
+      this.model.position.y + 2.5,
+      this.model.position.z
+    );
+  }
+
   hideAstronautModel() {
     if (this.model) {
       this.model.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           child.material.transparent = true;
-            child.material.opacity = 0;
+          child.material.opacity = 0;
         }
       });
     }

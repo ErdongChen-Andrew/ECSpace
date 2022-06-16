@@ -188,7 +188,19 @@ export default class ExplorerSet {
 
   // Set up the UFO model
   setUFO() {
+    this.ufoGroup = new THREE.Group();
     this.ufoModel = this.resources.items.ufoModel.scene;
+
+    // At camera viewing position box
+    this.ufoCamPosition = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1, 0.1, 0.1),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+      })
+    );
+    this.ufoCamPosition.position.x = -10;
+    this.ufoCamPosition.position.y = 3;
 
     // Apply UFO material and texture
     this.ufoModel.traverse((child) => {
@@ -211,7 +223,10 @@ export default class ExplorerSet {
         }
       }
     });
-    this.scene.add(this.ufoModel);
+
+    this.ufoGroup.add(this.ufoModel)
+    this.ufoGroup.add(this.ufoCamPosition)
+    this.scene.add(this.ufoGroup);
   }
 
   /**
@@ -533,7 +548,13 @@ export default class ExplorerSet {
     // Rotate UFO to face to planet
     this.ufoBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI);
 
+    // Set up UFO trigger body
+    const ufoTriggerShape = new CANNON.Cylinder(4.2, 4.2, 2);
+    this.ufoTriggerBody = new CANNON.Body({ isTrigger: true });
+    this.ufoTriggerBody.addShape(ufoTriggerShape);
+
     this.physicsWorld.addBody(this.ufoBody);
+    this.physicsWorld.addBody(this.ufoTriggerBody);
   }
 
   /**
@@ -574,7 +595,9 @@ export default class ExplorerSet {
     /**
      * UFO physics update
      */
-    this.ufoModel.position.copy(this.ufoBody.position);
-    this.ufoModel.quaternion.copy(this.ufoBody.quaternion);
+    this.ufoGroup.position.copy(this.ufoBody.position);
+    this.ufoGroup.quaternion.copy(this.ufoBody.quaternion);
+    this.ufoTriggerBody.position.copy(this.ufoBody.position);
+    this.ufoTriggerBody.quaternion.copy(this.ufoBody.quaternion);
   }
 }
