@@ -202,6 +202,15 @@ export default class ExplorerSet {
     this.ufoCamPosition.position.x = -10;
     this.ufoCamPosition.position.y = 3;
 
+    this.ufoCamLookAtPosition = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1, 0.1, 0.1),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+      })
+    );
+    this.ufoCamLookAtPosition.position.y = 2;
+
     // Apply UFO material and texture
     this.ufoModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -224,8 +233,9 @@ export default class ExplorerSet {
       }
     });
 
-    this.ufoGroup.add(this.ufoModel)
-    this.ufoGroup.add(this.ufoCamPosition)
+    this.ufoGroup.add(this.ufoModel);
+    this.ufoGroup.add(this.ufoCamPosition);
+    this.ufoGroup.add(this.ufoCamLookAtPosition);
     this.scene.add(this.ufoGroup);
   }
 

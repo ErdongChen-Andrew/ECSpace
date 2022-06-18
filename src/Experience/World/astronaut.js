@@ -106,8 +106,8 @@ export default class Astronaut {
     // set up idle cubes positions for idle cam position
     this.camIdlePosition.position.set(
       this.model.position.x + 2,
-      this.model.position.y +0.5,
-      this.model.position.z + 8
+      this.model.position.y + 1,
+      this.model.position.z + 7
     );
     // set up following invisible cubes positions
     this.camPosition.position.set(

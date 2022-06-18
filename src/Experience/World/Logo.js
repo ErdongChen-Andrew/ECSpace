@@ -24,13 +24,23 @@ export default class Logo {
   }
 
   setLogo() {
-    this.logoModel = this.resources.items.logoModel.scene;
-    this.logoModel.traverse((child) => {
+    this.logoTopModel = this.resources.items.logoTopModel.scene;
+    this.logoBottomModel = this.resources.items.logoBottomModel.scene;
+    this.logoModel = new THREE.Group();
+    this.logoTopModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.material = this.logoMaterial;
         this.logoMaterial.matcap = this.logoTexture;
       }
     });
+    this.logoBottomModel.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material = this.logoMaterial;
+        this.logoMaterial.matcap = this.logoTexture;
+      }
+    });
+    this.logoModel.add(this.logoTopModel);
+    this.logoModel.add(this.logoBottomModel);
     this.logoModel.rotation.y = Math.PI;
     this.logoModel.rotation.x = Math.PI / 2;
     this.logoModel.position.z = 18;

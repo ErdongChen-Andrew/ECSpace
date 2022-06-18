@@ -237,6 +237,16 @@ export default [
     path: "/models/logo.glb",
   },
   {
+    name: "logoTopModel",
+    type: "gltfModel",
+    path: "/models/logoTop.glb",
+  },
+  {
+    name: "logoBottomModel",
+    type: "gltfModel",
+    path: "/models/logoBottom.glb",
+  },
+  {
     name: "logoMatcapTexture",
     type: "texture",
     path: "/textures/7877EE_D87FC5_75D9C7_1C78C0-512px.png",

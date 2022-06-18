@@ -259,9 +259,11 @@ export default class World {
 
       // UFO setups
       this.ufoBody = this.explorerSet.ufoBody;
+      this.ufoBody.angularDamping = 0.1;
       this.ufoModel = this.explorerSet.ufoGroup;
       this.ufoTriggerBody = this.explorerSet.ufoTriggerBody;
       this.ufoCamPosition = this.explorerSet.ufoCamPosition;
+      this.ufoCamLookAtPosition = this.explorerSet.ufoCamLookAtPosition;
       this.ufoBodySpherical = new THREE.Spherical();
       this.ufoXAxis = new THREE.Vector3();
       this.ufoYAxis = new THREE.Vector3();
@@ -582,28 +584,6 @@ export default class World {
   }
 
   /**
-   * Set up trigger event when player enter / leave shelf area
-   */
-  shelfTriggerEvent() {
-    // Trigger event when player close to shelf
-    this.shelfTriggerBody.addEventListener("collide", (e) => {
-      if (e.body === this.astronautBody) {
-        this.astronautAtShelf = true;
-        this.ableToPressF = true;
-      }
-    });
-    this.physicsWorld.addEventListener("endContact", (e) => {
-      if (
-        (e.bodyA === this.astronautBody && e.bodyB === this.shelfTriggerBody) ||
-        (e.bodyB === this.astronautBody && e.bodyA === this.shelfTriggerBody)
-      ) {
-        this.astronautAtShelf = false;
-        this.ableToPressF = false;
-      }
-    });
-  }
-
-  /**
    * Rest the shelf to origin status
    */
   resetProjectShelf(currentIntersect) {
@@ -711,6 +691,28 @@ export default class World {
   }
 
   /**
+   * Set up trigger event when player enter / leave shelf area
+   */
+  shelfTriggerEvent() {
+    // Trigger event when player close to shelf
+    this.shelfTriggerBody.addEventListener("collide", (e) => {
+      if (e.body === this.astronautBody) {
+        this.astronautAtShelf = true;
+        this.ableToPressF = true;
+      }
+    });
+    this.physicsWorld.addEventListener("endContact", (e) => {
+      if (
+        (e.bodyA === this.astronautBody && e.bodyB === this.shelfTriggerBody) ||
+        (e.bodyB === this.astronautBody && e.bodyA === this.shelfTriggerBody)
+      ) {
+        this.astronautAtShelf = false;
+        this.ableToPressF = false;
+      }
+    });
+  }
+
+  /**
    * Set up trigger event when player enter / leave UFO area
    */
   ufoTriggerEvent() {
@@ -738,6 +740,22 @@ export default class World {
   update() {
     // Update physics world
     this.physicsWorld.step(1 / 60, this.time.delta / 1000, 3);
+
+    // Detect if indicator rigs are over laping, if so block others
+    if (this.astronautAtLogo && this.astronautAtShelf) {
+      this.astronautAtShelf = false;
+    } else if (this.astronautAtLogo && this.astronautAtUFO) {
+      this.astronautAtUFO = false;
+    } else if (
+      this.astronautAtLogo &&
+      this.astronautAtUFO &&
+      this.astronautAtShelf
+    ) {
+      this.astronautAtUFO = false;
+      this.astronautAtShelf = false;
+    } else if (this.astronautAtUFO && this.astronautAtShelf) {
+      this.astronautAtShelf = false;
+    }
 
     // Logo update
     if (this.logoSet) {
@@ -1245,6 +1263,14 @@ export default class World {
         this.camPositionLookAt.getWorldPosition(this.emptyVec3)
       );
       this.camera.instance.up.copy(this.astronautGravityDirection.scale(-1));
+
+      // Camera auto follow astronaut when it is in the high sky
+      if (this.astronautBody.position.distanceTo(this.origin) > 20) {
+        this.camCurrentPosition.lerp(this.camNewPosition, 1);
+        this.camCurrentPositionLookAt.lerp(this.camNewPositionLookAt, 1);
+        this.camera.instance.position.copy(this.camCurrentPosition);
+        this.camera.instance.lookAt(this.camCurrentPositionLookAt);
+      }
     }
 
     /**
@@ -1284,15 +1310,15 @@ export default class World {
             this.currentIntersect = intersects[0];
             // Scale up hovering object and zoom it toward to camera
             gsap.to(this.currentIntersect.object.parent.position, {
-              duration: 0.5,
+              duration: 0.4,
               x: 0,
               y: 0.2,
               z: -2,
             });
             gsap.to(this.currentIntersect.object.parent.scale, {
-              duration: 0.5,
-              x: 2,
-              y: 2,
+              duration: 0.4,
+              x: 2.65,
+              y: 2.5,
             });
           }
           // Detect if hovering on project frame
@@ -1305,15 +1331,15 @@ export default class World {
             this.currentIntersect = intersects[0];
             // Scale up hovering object and zoom it toward to camera
             gsap.to(this.currentIntersect.object.position, {
-              duration: 0.5,
+              duration: 0.4,
               x: 0,
               y: 0.2,
               z: -2,
             });
             gsap.to(this.currentIntersect.object.scale, {
-              duration: 0.5,
-              x: 2,
-              y: 2,
+              duration: 0.4,
+              x: 2.65,
+              y: 2.5,
             });
           }
         }
@@ -1330,8 +1356,9 @@ export default class World {
       );
       this.camera.instance.lookAt(this.shelfModel.position);
       this.camera.instance.up.copy(this.shelfYAxis);
+      // Hide astronaut shadow
       this.playerPlate.material.opacity = 0;
-    } 
+    }
 
     /**
      * UFO driving event
@@ -1346,19 +1373,131 @@ export default class World {
       // Move camera focus on the ufo if player at the ufo and pressed F
       this.camera.instance.position.lerp(
         this.ufoCamPosition.getWorldPosition(this.emptyVec3),
-        0.05
+        0.1
       );
-      this.camera.instance.lookAt(this.ufoModel.position);
+      this.camera.instance.lookAt(
+        this.ufoCamLookAtPosition.getWorldPosition(this.emptyVec3)
+      );
       this.camera.instance.up.copy(this.ufoYAxis);
+      // Hide indicator ring
       if (this.ufoIndicator.children[0].material.opacity > 0) {
         this.ufoIndicator.children[0].material.opacity -= 0.1;
       }
-    }
+      // Hide astronaut shadow
+      this.playerPlate.material.opacity = 0;
+      // Move astronaut body to the top of UFO
+      this.astronautBody.position.copy(
+        this.ufoCamLookAtPosition.getWorldPosition(this.emptyVec3)
+      );
 
-    /**
-     * Reset camera if none of event triggers
-     */
-    else if (
+      /**
+       * UFO movement control
+       */
+      // UFO take off and set gravity to 0
+      this.ufoBody.applyForce(this.ufoYAxis);
+      this.ufoBody.force.set(0, 0, 0);
+      // Move forward
+      if (this.keyMap["KeyW"]) {
+        this.ufoBody.velocity.set(
+          3 * this.ufoXAxis.x,
+          3 * this.ufoXAxis.y,
+          3 * this.ufoXAxis.z
+        );
+      }
+      // Move backward
+      if (this.keyMap["KeyS"]) {
+        this.ufoBody.velocity.set(
+          -2 * this.ufoXAxis.x,
+          -2 * this.ufoXAxis.y,
+          -2 * this.ufoXAxis.z
+        );
+      }
+      // Move upward
+      if (this.keyMap["KeyV"]) {
+        this.ufoBody.velocity.set(
+          2 * this.ufoYAxis.x,
+          2 * this.ufoYAxis.y,
+          2 * this.ufoYAxis.z
+        );
+      }
+      // Move downward
+      if (this.keyMap["Space"]) {
+        this.ufoBody.velocity.set(
+          -2 * this.ufoYAxis.x,
+          -2 * this.ufoYAxis.y,
+          -2 * this.ufoYAxis.z
+        );
+      }
+      // Turning left
+      if (this.keyMap["KeyA"]) {
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(0.5, 0, 0),
+          new CANNON.Vec3(0, 0, 1)
+        );
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(-0.5, 0, 0),
+          new CANNON.Vec3(0, 0, -1)
+        );
+      }
+      // Turning right
+      if (this.keyMap["KeyD"]) {
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(0.5, 0, 0),
+          new CANNON.Vec3(0, 0, -1)
+        );
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(-0.5, 0, 0),
+          new CANNON.Vec3(0, 0, 1)
+        );
+      }
+      // Rolling counterclockwise
+      if (this.keyMap["ArrowLeft"]) {
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(0, 0.5, 0),
+          new CANNON.Vec3(0, 0, 1)
+        );
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(0, -0.5, 0),
+          new CANNON.Vec3(0, 0, -1)
+        );
+      }
+      // Rolling clockwise
+      if (this.keyMap["ArrowRight"]) {
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(0, 0.5, 0),
+          new CANNON.Vec3(0, 0, -1)
+        );
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(0, -0.5, 0),
+          new CANNON.Vec3(0, 0, 1)
+        );
+      }
+      // Rolling forward
+      if (this.keyMap["ArrowUp"]) {
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(0, 0.5, 0),
+          new CANNON.Vec3(-1, 0, 0)
+        );
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(0, -0.5, 0),
+          new CANNON.Vec3(1, 0, 0)
+        );
+      }
+      // Rolling backward
+      if (this.keyMap["ArrowDown"]) {
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(0, 0.5, 0),
+          new CANNON.Vec3(1, 0, 0)
+        );
+        this.ufoBody.applyLocalForce(
+          new CANNON.Vec3(0, -0.5, 0),
+          new CANNON.Vec3(-1, 0, 0)
+        );
+      }
+    } else if (
+      /**
+       * Reset camera if none of event triggers
+       */
       (this.astronaut && !this.pressedF) ||
       this.astronautAtShelf === false ||
       this.astronautAtLogo === false ||
@@ -1368,6 +1507,9 @@ export default class World {
       this.camera.instance.position.lerp(this.camCurrentPosition, 0.07);
       this.camera.instance.lookAt(this.camCurrentPositionLookAt);
       this.camera.instance.up.copy(this.astronautGravityDirection.scale(-1));
+      // Move back the project box when mouse is leaving
+      this.resetProjectShelf(this.currentIntersect);
+      this.currentIntersect = null;
     }
 
     /**
