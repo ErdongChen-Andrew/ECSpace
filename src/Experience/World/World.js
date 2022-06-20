@@ -127,6 +127,12 @@ export default class World {
       this.astronautDistanceToLogo = null;
       this.logoSet = new Logo(this.defaultMaterial, this.physicsWorld);
       this.logoMesh = this.logoSet.logoModel;
+      this.logoTopMesh = this.logoSet.logoTopModel;
+      this.logoTextMesh = this.logoSet.logoTextModel;
+      this.logoIconsSet = this.logoSet.iconsSet;
+      this.logoTriggerBody = this.logoSet.logoTriggerBody;
+      this.logoCamPosition = this.logoSet.logoCamPosition;
+      this.logoCamLookAtPosition = new THREE.Vector3();
       this.logoFixedPosition = new THREE.Vector3(0, 0, 18);
       this.logoMeshSpherical = new THREE.Spherical();
 
@@ -265,9 +271,18 @@ export default class World {
       this.ufoCamPosition = this.explorerSet.ufoCamPosition;
       this.ufoCamLookAtPosition = this.explorerSet.ufoCamLookAtPosition;
       this.ufoBodySpherical = new THREE.Spherical();
+      // UFO control setups
       this.ufoXAxis = new THREE.Vector3();
       this.ufoYAxis = new THREE.Vector3();
       this.ufoZAxis = new THREE.Vector3();
+      this.ufoPosXForce = new CANNON.Vec3(0.5, 0, 0);
+      this.ufoPosYForce = new CANNON.Vec3(0, 0.5, 0);
+      this.ufoNegXForce = new CANNON.Vec3(-0.5, 0, 0);
+      this.ufoNegYForce = new CANNON.Vec3(0, -0.5, 0);
+      this.ufoRightWing = new CANNON.Vec3(0, 0, 1);
+      this.ufoLeftWing = new CANNON.Vec3(0, 0, -1);
+      this.ufoHead = new CANNON.Vec3(1, 0, 0);
+      this.ufoTail = new CANNON.Vec3(-1, 0, 0);
 
       /**
        * Indicator Setups
@@ -280,6 +295,7 @@ export default class World {
         opacity: 0.5,
       });
       this.indicatorModel.children[0].material = this.indicatorMaterial;
+      // this.indicatorModel.children[0].renderOrder = 0.5;
 
       // Logo indicator setups
       this.logoIndicator = this.indicatorModel.clone();
@@ -311,6 +327,7 @@ export default class World {
        */
       this.mouse = new THREE.Vector2();
       this.currentIntersect = null;
+      this.currentIconIntersect = null;
       // Getting mouse move position
       window.addEventListener("mousemove", (e) => {
         this.mouse.x = (e.clientX / this.sizes.width) * 2 - 1;
@@ -318,6 +335,7 @@ export default class World {
       });
       // Mouse click event
       window.addEventListener("click", (e) => {
+        // For project shelf
         if (this.currentIntersect) {
           // Detect which project is been click and open a new tab to that project website
           switch (this.currentIntersect.object.name) {
@@ -353,12 +371,37 @@ export default class World {
               break;
           }
         }
+
+        // For logo icons
+        if (this.currentIconIntersect) {
+          // Detect which icon is been click and open a new tab to that website
+          switch (this.currentIconIntersect.object.name) {
+            case "twitterIcon":
+              window.open("https://twitter.com/AndrewChenE", "_blank").focus();
+              break;
+            case "githubIcon":
+              window
+                .open("https://github.com/ErdongChen-Andrew", "_blank")
+                .focus();
+              break;
+            case "linkedinIcon":
+              window
+                .open("https://www.linkedin.com/in/erdong-chen", "_blank")
+                .focus();
+              break;
+            case "emailIcon":
+              window.location.href =
+                "mailto:erdong1993@gmail.com?subject=Hello%20World!";
+              break;
+          }
+        }
       });
 
       /**
        * Raycaster
        */
-      this.raycaster = new THREE.Raycaster();
+      this.projectRaycaster = new THREE.Raycaster();
+      this.iconRaycaster = new THREE.Raycaster();
 
       this.logoIndicatorSetup();
       this.setAstronautPhysics();
@@ -369,6 +412,7 @@ export default class World {
 
       this.shelfTriggerEvent();
       this.ufoTriggerEvent();
+      this.logoTriggerEvent();
     });
   }
 
@@ -507,6 +551,7 @@ export default class World {
     );
     this.playerPlate.position.y = this.planetRadius + 0.05;
     this.playerPlate.rotation.x = -Math.PI / 2;
+    this.playerPlate.renderOrder = 0.5;
     this.playerGroup.add(this.playerPlate);
     this.scene.add(this.playerGroup);
 
@@ -581,6 +626,32 @@ export default class World {
     const near = 50;
     const far = 500;
     this.scene.fog = new THREE.Fog(color, near, far);
+  }
+
+  /**
+   * Rest the logo to origin status
+   */
+  resetLogo() {
+    // Change cursor back to normal
+    document.body.style.cursor = "default";
+    gsap.to(this.logoTopMesh.position, {
+      duration: 1,
+      y: 0,
+    });
+    gsap.to(this.logoTextMesh.scale, {
+      duration: 0.7,
+      x: 0.1,
+      y: 0.1,
+      z: 0.1,
+    });
+    this.logoIconsSet.forEach((icon) => {
+      gsap.to(icon.scale, {
+        duration: 0.7,
+        x: 0.1,
+        y: 0.1,
+        z: 0.1,
+      });
+    });
   }
 
   /**
@@ -735,6 +806,28 @@ export default class World {
   }
 
   /**
+   * Set up trigger event when player enter / leave logo area
+   */
+  logoTriggerEvent() {
+    // Trigger event when player close to logo
+    this.logoTriggerBody.addEventListener("collide", (e) => {
+      if (e.body === this.astronautBody) {
+        this.astronautAtLogo = true;
+        this.ableToPressF = true;
+      }
+    });
+    this.physicsWorld.addEventListener("endContact", (e) => {
+      if (
+        (e.bodyA === this.astronautBody && e.bodyB === this.logoTriggerBody) ||
+        (e.bodyB === this.astronautBody && e.bodyA === this.logoTriggerBody)
+      ) {
+        this.astronautAtLogo = false;
+        this.ableToPressF = false;
+      }
+    });
+  }
+
+  /**
    * Animation setup
    */
   update() {
@@ -769,10 +862,14 @@ export default class World {
       // If player is near logo, show the indicator
       if (this.logoMesh.position.distanceTo(this.astronautMesh.position) > 8) {
         if (this.logoIndicator.children[0].material.opacity > 0) {
+          // Change render order of indicators and player shadow to prevent transparent overlapping
+          this.logoIndicator.children[0].renderOrder = 0.5;
           this.logoIndicator.children[0].material.opacity -= 0.05;
         }
       } else {
         if (this.logoIndicator.children[0].material.opacity < 0.5) {
+          // Change render order of indicators and player shadow to prevent transparent overlapping
+          this.logoIndicator.children[0].renderOrder = 0;
           this.logoIndicator.children[0].material.opacity += 0.05;
         }
       }
@@ -1069,10 +1166,14 @@ export default class World {
         this.shelfModel.position.distanceTo(this.astronautMesh.position) > 8
       ) {
         if (this.projectsIndicator.children[0].material.opacity > 0) {
+          // Change render order of indicators and player shadow to prevent transparent overlapping
+          this.projectsIndicator.children[0].renderOrder = 0.5;
           this.projectsIndicator.children[0].material.opacity -= 0.05;
         }
       } else {
         if (this.projectsIndicator.children[0].material.opacity < 0.5) {
+          // Change render order of indicators and player shadow to prevent transparent overlapping
+          this.projectsIndicator.children[0].renderOrder = 0;
           this.projectsIndicator.children[0].material.opacity += 0.05;
         }
       }
@@ -1292,8 +1393,10 @@ export default class World {
       this.projectsIndicator.children[0].material.opacity > 0
     ) {
       // Create raycaster alone current camera position and mouse position
-      this.raycaster.setFromCamera(this.mouse, this.camera.instance);
-      const intersects = this.raycaster.intersectObjects(this.projectsSet);
+      this.projectRaycaster.setFromCamera(this.mouse, this.camera.instance);
+      const intersects = this.projectRaycaster.intersectObjects(
+        this.projectsSet
+      );
 
       // Add hovering obejct to an array
       if (intersects.length) {
@@ -1399,9 +1502,9 @@ export default class World {
       // Move forward
       if (this.keyMap["KeyW"]) {
         this.ufoBody.velocity.set(
-          3 * this.ufoXAxis.x,
-          3 * this.ufoXAxis.y,
-          3 * this.ufoXAxis.z
+          4 * this.ufoXAxis.x,
+          4 * this.ufoXAxis.y,
+          4 * this.ufoXAxis.z
         );
       }
       // Move backward
@@ -1430,69 +1533,106 @@ export default class World {
       }
       // Turning left
       if (this.keyMap["KeyA"]) {
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(0.5, 0, 0),
-          new CANNON.Vec3(0, 0, 1)
-        );
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(-0.5, 0, 0),
-          new CANNON.Vec3(0, 0, -1)
-        );
+        this.ufoBody.applyLocalForce(this.ufoPosXForce, this.ufoRightWing);
+        this.ufoBody.applyLocalForce(this.ufoNegXForce, this.ufoLeftWing);
       }
       // Turning right
       if (this.keyMap["KeyD"]) {
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(0.5, 0, 0),
-          new CANNON.Vec3(0, 0, -1)
-        );
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(-0.5, 0, 0),
-          new CANNON.Vec3(0, 0, 1)
-        );
+        this.ufoBody.applyLocalForce(this.ufoPosXForce, this.ufoLeftWing);
+        this.ufoBody.applyLocalForce(this.ufoNegXForce, this.ufoRightWing);
       }
       // Rolling counterclockwise
       if (this.keyMap["ArrowLeft"]) {
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(0, 0.5, 0),
-          new CANNON.Vec3(0, 0, 1)
-        );
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(0, -0.5, 0),
-          new CANNON.Vec3(0, 0, -1)
-        );
+        this.ufoBody.applyLocalForce(this.ufoPosYForce, this.ufoRightWing);
+        this.ufoBody.applyLocalForce(this.ufoNegYForce, this.ufoLeftWing);
       }
       // Rolling clockwise
       if (this.keyMap["ArrowRight"]) {
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(0, 0.5, 0),
-          new CANNON.Vec3(0, 0, -1)
-        );
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(0, -0.5, 0),
-          new CANNON.Vec3(0, 0, 1)
-        );
+        this.ufoBody.applyLocalForce(this.ufoPosYForce, this.ufoLeftWing);
+        this.ufoBody.applyLocalForce(this.ufoNegYForce, this.ufoRightWing);
       }
       // Rolling forward
       if (this.keyMap["ArrowUp"]) {
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(0, 0.5, 0),
-          new CANNON.Vec3(-1, 0, 0)
-        );
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(0, -0.5, 0),
-          new CANNON.Vec3(1, 0, 0)
-        );
+        this.ufoBody.applyLocalForce(this.ufoPosYForce, this.ufoTail);
+        this.ufoBody.applyLocalForce(this.ufoNegYForce, this.ufoHead);
       }
       // Rolling backward
       if (this.keyMap["ArrowDown"]) {
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(0, 0.5, 0),
-          new CANNON.Vec3(1, 0, 0)
-        );
-        this.ufoBody.applyLocalForce(
-          new CANNON.Vec3(0, -0.5, 0),
-          new CANNON.Vec3(-1, 0, 0)
-        );
+        this.ufoBody.applyLocalForce(this.ufoPosYForce, this.ufoHead);
+        this.ufoBody.applyLocalForce(this.ufoNegYForce, this.ufoTail);
+      }
+    }
+
+    /**
+     * Logo trigger event
+     */
+    // Trigger event when palyer is at logo area and pressed F
+    else if (this.astronautAtLogo && this.pressedF) {
+      // Move camera focus on the logo if player at the logo and pressed F
+      this.camera.instance.position.lerp(
+        this.logoCamPosition.getWorldPosition(this.emptyVec3),
+        0.02
+      );
+      this.logoCamLookAtPosition.set(
+        this.logoMesh.position.x,
+        this.logoMesh.position.y,
+        this.logoMesh.position.z + 2.5
+      );
+      this.camera.instance.lookAt(this.logoCamLookAtPosition);
+      this.camera.instance.up.copy(this.logoIndicator.position);
+
+      // Show logo text and icons
+      gsap.to(this.logoTopMesh.position, {
+        duration: 0.7,
+        y: 4,
+      });
+      gsap.to(this.logoTextMesh.scale, {
+        duration: 1,
+        x: 1,
+        y: 1,
+        z: 1,
+      });
+      this.logoIconsSet.forEach((icon) => {
+        gsap.to(icon.scale, {
+          duration: 0.7,
+          x: 1,
+          y: 1,
+          z: 1,
+        });
+      });
+
+      // Create raycaster alone current camera position and mouse position
+      this.iconRaycaster.setFromCamera(this.mouse, this.camera.instance);
+      const intersects = this.iconRaycaster.intersectObjects(this.logoIconsSet);
+
+      // Add hovering obejct to an array
+      if (intersects.length) {
+        if (!this.currentIconIntersect) {
+          this.currentIconIntersect = intersects[0];
+          // Change cursor to pointer
+          document.body.style.cursor = "pointer";
+          // Scale up hovering object
+          gsap.to(this.currentIconIntersect.object.scale, {
+            duration: 0.4,
+            x: 120,
+            y: 120,
+            z: 120,
+          });
+        }
+      } else {
+        // Scale down the project box when mouse is leaving
+        if (this.currentIconIntersect) {
+          gsap.to(this.currentIconIntersect.object.scale, {
+            duration: 0.4,
+            x: 100,
+            y: 100,
+            z: 100,
+          });
+          this.currentIconIntersect = null;
+        }
+
+        // Change cursor back to default
+        document.body.style.cursor = "default";
       }
     } else if (
       /**
@@ -1504,12 +1644,15 @@ export default class World {
       this.astronautAtUFO === false
     ) {
       // move camera back to original position if player pressed F again
-      this.camera.instance.position.lerp(this.camCurrentPosition, 0.07);
+      this.camera.instance.position.lerp(this.camCurrentPosition, 0.05);
       this.camera.instance.lookAt(this.camCurrentPositionLookAt);
       this.camera.instance.up.copy(this.astronautGravityDirection.scale(-1));
       // Move back the project box when mouse is leaving
       this.resetProjectShelf(this.currentIntersect);
       this.currentIntersect = null;
+      // Reset logo status
+      this.resetLogo();
+      this.currentIconIntersect = null;
     }
 
     /**
@@ -1519,7 +1662,8 @@ export default class World {
       (this.astronautAtShelf &&
         this.pressedF &&
         this.projectsIndicator.children[0].material.opacity > 0) ||
-      (this.astronautAtUFO && this.pressedF)
+      (this.astronautAtUFO && this.pressedF) ||
+      (this.astronautAtLogo && this.pressedF)
     ) {
       this.astronaut.hideAstronautModel();
       this.physicsWorld.removeBody(this.astronautBody);
@@ -1529,6 +1673,7 @@ export default class World {
       this.astronautAtLogo === false ||
       this.astronautAtUFO === false
     ) {
+      this.pressedF = false;
       this.astronaut.showAstronautModel();
       this.physicsWorld.addBody(this.astronautBody);
     }

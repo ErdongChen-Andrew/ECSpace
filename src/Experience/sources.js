@@ -247,6 +247,31 @@ export default [
     path: "/models/logoBottom.glb",
   },
   {
+    name: "logoTextModel",
+    type: "gltfModel",
+    path: "/models/logoText.glb",
+  },
+  {
+    name: "twitterIconModel",
+    type: "gltfModel",
+    path: "/models/twitterIcon.glb",
+  },
+  {
+    name: "githubIconModel",
+    type: "gltfModel",
+    path: "/models/githubIcon.glb",
+  },
+  {
+    name: "linkedinIconModel",
+    type: "gltfModel",
+    path: "/models/linkedinIcon.glb",
+  },
+  {
+    name: "emailIconModel",
+    type: "gltfModel",
+    path: "/models/emailIcon.glb",
+  },
+  {
     name: "logoMatcapTexture",
     type: "texture",
     path: "/textures/7877EE_D87FC5_75D9C7_1C78C0-512px.png",

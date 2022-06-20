@@ -26,21 +26,76 @@ export default class Logo {
   setLogo() {
     this.logoTopModel = this.resources.items.logoTopModel.scene;
     this.logoBottomModel = this.resources.items.logoBottomModel.scene;
+    this.logoTextModel = this.resources.items.logoTextModel.scene;
+    this.twitterIconModel = this.resources.items.twitterIconModel.scene;
+    this.githubIconModel = this.resources.items.githubIconModel.scene;
+    this.linkedinIconModel = this.resources.items.linkedinIconModel.scene;
+    this.emailIconModel = this.resources.items.emailIconModel.scene;
+    this.iconsSet = [
+      this.twitterIconModel,
+      this.githubIconModel,
+      this.linkedinIconModel,
+      this.emailIconModel,
+    ];
+
     this.logoModel = new THREE.Group();
+    // Logo top setups
     this.logoTopModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.material = this.logoMaterial;
         this.logoMaterial.matcap = this.logoTexture;
       }
     });
+    // Logo bottom setups
     this.logoBottomModel.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.material = this.logoMaterial;
         this.logoMaterial.matcap = this.logoTexture;
       }
     });
+    // Logo text setups
+    this.logoTextModel.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material = this.logoMaterial;
+        this.logoMaterial.matcap = this.logoTexture;
+      }
+    });
+    this.logoTextModel.scale.set(0.1, 0.1, 0.1);
+
+    // Each icon setups
+    this.iconsSet.forEach((icon) => {
+      icon.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.material = this.logoMaterial.clone();
+          this.logoMaterial.matcap = this.logoTexture;
+          child.material.side = THREE.DoubleSide;
+          child.material.transparent = true;
+          child.material.opacity = 0.6;
+        }
+      });
+      icon.scale.set(0.1, 0.1, 0.1);
+    });
+
+    // At camera viewing position box
+    this.logoCamPosition = new THREE.Mesh(
+      new THREE.BoxGeometry(0.1, 0.1, 0.1),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+      })
+    );
+    this.logoCamPosition.position.z = 10;
+    this.logoCamPosition.position.y = 1;
+
     this.logoModel.add(this.logoTopModel);
     this.logoModel.add(this.logoBottomModel);
+    this.logoModel.add(this.logoTextModel);
+    this.logoModel.add(this.twitterIconModel);
+    this.logoModel.add(this.githubIconModel);
+    this.logoModel.add(this.linkedinIconModel);
+    this.logoModel.add(this.emailIconModel);
+    this.logoModel.add(this.logoCamPosition);
+
     this.logoModel.rotation.y = Math.PI;
     this.logoModel.rotation.x = Math.PI / 2;
     this.logoModel.position.z = 18;
@@ -49,13 +104,26 @@ export default class Logo {
   }
 
   setLogoPhysics() {
-    this.logoShape = new CANNON.Sphere(2);
+    this.logoShape = new CANNON.Sphere(1.5);
     this.logoBody = new CANNON.Body({
       mass: 1,
       material: this.defaultMaterial,
     });
+    this.logoBody.position.y = 0.5;
     this.logoBody.addShape(this.logoShape);
+
+    // Set up logo trigger body
+    const logoTriggerShape = new CANNON.Cylinder(4.3, 4.3, 3);
+    this.logoTriggerBody = new CANNON.Body({ isTrigger: true });
+    this.logoTriggerBody.addShape(logoTriggerShape);
+    this.logoTriggerBody.quaternion.setFromAxisAngle(
+      new CANNON.Vec3(1, 0, 0),
+      Math.PI / 2
+    );
+    this.logoTriggerBody.position.set(0, 0, 16);
+
     this.physicsWorld.addBody(this.logoBody);
+    this.physicsWorld.addBody(this.logoTriggerBody);
   }
 
   update(logoOffset) {

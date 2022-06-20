@@ -540,6 +540,7 @@ export default class ExplorerSet {
     const ufoShape = new CANNON.Cylinder(2.8, 2.8, 0.5);
     const supportShape1 = new CANNON.Sphere(0.5);
     const supportShape2 = new CANNON.Sphere(0.95);
+    const supportShape3 = new CANNON.Sphere(0.1);
 
     this.ufoBody = new CANNON.Body({
       mass: ufoMass,
@@ -551,6 +552,7 @@ export default class ExplorerSet {
     this.ufoBody.addShape(supportShape1, new CANNON.Vec3(-1, -0.2, 1.75));
     this.ufoBody.addShape(supportShape1, new CANNON.Vec3(-1, -0.2, -1.75));
     this.ufoBody.addShape(supportShape2, new CANNON.Vec3(0, 0.4, 0));
+    this.ufoBody.addShape(supportShape3, new CANNON.Vec3(-2.9, 3.1, 0));
 
     // Move UFO position
     this.ufoBody.position.set(ufoPositionX, ufoPositionY, ufoPositionZ);
