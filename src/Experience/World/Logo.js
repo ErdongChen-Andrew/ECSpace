@@ -20,7 +20,9 @@ export default class Logo {
     this.logoTextTextture.encoding = THREE.sRGBEncoding;
 
     this.setLogo();
+    this.setLogoBase();
     this.setLogoPhysics();
+    this.setLogoBasePhysics();
   }
 
   setLogo() {
@@ -78,7 +80,7 @@ export default class Logo {
 
     // At camera viewing position box
     this.logoCamPosition = new THREE.Mesh(
-      new THREE.BoxGeometry(0.1, 0.1, 0.1),
+      new THREE.BoxGeometry(0.01, 0.01, 0.01),
       new THREE.MeshBasicMaterial({
         transparent: true,
         opacity: 0,
@@ -103,13 +105,26 @@ export default class Logo {
     this.scene.add(this.logoModel);
   }
 
+  setLogoBase() {
+    this.logoBaseModel = this.resources.items.logoBaseModel.scene;
+    this.logoBaseModel.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.material = this.logoMaterial;
+        this.logoMaterial.matcap = this.logoTexture;
+      }
+    });
+    this.logoBaseModel.rotation.x = Math.PI / 2;
+    this.logoBaseModel.position.z = 14.3;
+    this.scene.add(this.logoBaseModel);
+  }
+
   setLogoPhysics() {
-    this.logoShape = new CANNON.Sphere(1.5);
+    this.logoShape = new CANNON.Cylinder(2, 2, 1.5);
     this.logoBody = new CANNON.Body({
       mass: 1,
       material: this.defaultMaterial,
     });
-    this.logoBody.position.y = 0.5;
+    this.logoBody.position.y = 0.8;
     this.logoBody.addShape(this.logoShape);
 
     // Set up logo trigger body
@@ -124,6 +139,21 @@ export default class Logo {
 
     this.physicsWorld.addBody(this.logoBody);
     this.physicsWorld.addBody(this.logoTriggerBody);
+  }
+
+  setLogoBasePhysics() {
+    this.logoBaseShape = new CANNON.Cylinder(2, 4, 1);
+    this.logoBaseBody = new CANNON.Body({
+      mass: 0,
+      material: this.defaultMaterial,
+      shape: this.logoBaseShape,
+    });
+    this.logoBaseBody.quaternion.setFromAxisAngle(
+      new CANNON.Vec3(1, 0, 0),
+      Math.PI / 2
+    );
+    this.logoBaseBody.position.z = 14.8;
+    this.physicsWorld.addBody(this.logoBaseBody);
   }
 
   update(logoOffset) {

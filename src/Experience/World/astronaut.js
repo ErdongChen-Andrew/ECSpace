@@ -30,7 +30,7 @@ export default class Astronaut {
     /**
      * Camera basic set up
      */
-    const invisibleCubeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const invisibleCubeGeo = new THREE.BoxGeometry(0.01, 0.01, 0.01);
     const invisibleCubeMaterial = new THREE.MeshBasicMaterial({
       transparent: true,
       opacity: 0,

@@ -232,9 +232,9 @@ export default [
     path: "/models/diffuser.glb",
   },
   {
-    name: "logoModel",
+    name: "logoBaseModel",
     type: "gltfModel",
-    path: "/models/logo.glb",
+    path: "/models/logoBase.glb",
   },
   {
     name: "logoTopModel",
@@ -475,5 +475,10 @@ export default [
     name: "shadowMap",
     type: "texture",
     path: "/alphaMap/simpleShadow.jpeg",
+  },
+  {
+    name: "helpPageTexture",
+    type: "texture",
+    path: "/textures/HelpPage.png",
   },
 ];

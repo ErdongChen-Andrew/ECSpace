@@ -20,9 +20,20 @@ export default class Resource extends EventEmitter {
 
   setLoaders() {
     this.loaders = {};
-    this.loaders.gltfLoader = new GLTFLoader();
-    this.loaders.textureLoader = new THREE.TextureLoader();
-    this.loaders.cubeTextureLoader = new THREE.CubeTextureLoader();
+    this.loaders.loadingManager = new THREE.LoadingManager(
+      // Loaded
+      ()=>{
+        console.log("loaded");
+      },
+
+      // Progress
+      (itemUrl, itemsLoaded, itemsTotal)=>{
+        console.log(Math.round(itemsLoaded / itemsTotal*100));
+      }
+    )
+    this.loaders.gltfLoader = new GLTFLoader(this.loaders.loadingManager);
+    this.loaders.textureLoader = new THREE.TextureLoader(this.loaders.loadingManager);
+    this.loaders.cubeTextureLoader = new THREE.CubeTextureLoader(this.loaders.loadingManager);
   }
 
   startLoading() {

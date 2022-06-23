@@ -88,7 +88,7 @@ export default class World {
       this.debugger = new CannonDebugger(this.scene, this.physicsWorld, {
         onInit(body, mesh) {
           document.addEventListener("keydown", (event) => {
-            if (event.key === "h") {
+            if (event.key === "k") {
               mesh.visible = !mesh.visible;
             }
           });
@@ -409,6 +409,7 @@ export default class World {
       this.setIdleAnimationTimer();
       this.setCamera();
       this.setFog();
+      this.setHelpPage();
 
       this.shelfTriggerEvent();
       this.ufoTriggerEvent();
@@ -629,6 +630,39 @@ export default class World {
   }
 
   /**
+   * Set up help page
+   */
+  setHelpPage() {
+    const helpPageTexture = this.resources.items.helpPageTexture;
+    helpPageTexture.encoding = THREE.sRGBEncoding;
+    helpPageTexture.generateMipmaps = false;
+
+    // Get camera look at direction
+    this.cameraLookAtVec = new THREE.Vector3();
+
+    // Help page setups
+    const helpPageMaterial = new THREE.SpriteMaterial({
+      map: helpPageTexture,
+      transparent: true,
+      opacity: 0,
+    });
+    this.helpPage = new THREE.Sprite(helpPageMaterial);
+    this.helpPage.scale.set(1, 0.7);
+    this.scene.add(this.helpPage);
+  }
+  // Update help page location
+  updateHelpPageLocation() {
+    // Update camera look at direction for help page
+    this.camera.instance.getWorldDirection(this.cameraLookAtVec);
+
+    // Update help page and help buttom position
+    this.helpPage.position.addVectors(
+      this.camera.instance.position,
+      this.cameraLookAtVec
+    );
+  }
+
+  /**
    * Rest the logo to origin status
    */
   resetLogo() {
@@ -833,6 +867,21 @@ export default class World {
   update() {
     // Update physics world
     this.physicsWorld.step(1 / 60, this.time.delta / 1000, 3);
+
+    // Access help page
+    if (this.helpPage) {
+      if (this.keyMap["KeyH"]) {
+        gsap.to(this.helpPage.material, {
+          duration: 0.4,
+          opacity: 0.95,
+        });
+      } else if (!this.keyMap["KeyH"]) {
+        gsap.to(this.helpPage.material, {
+          duration: 0.4,
+          opacity: 0,
+        });
+      }
+    }
 
     // Detect if indicator rigs are over laping, if so block others
     if (this.astronautAtLogo && this.astronautAtShelf) {
@@ -1235,8 +1284,14 @@ export default class World {
             this.astronautBody.velocity.copy(this.walkVelocityAndDir);
           }
           // update camera position when move forward
-          this.camCurrentPosition.lerp(this.camNewPosition, 0.03);
-          this.camCurrentPositionLookAt.lerp(this.camNewPositionLookAt, 0.03);
+          this.camCurrentPosition.lerp(
+            this.camNewPosition,
+            this.time.delta / 500
+          );
+          this.camCurrentPositionLookAt.lerp(
+            this.camNewPositionLookAt,
+            this.time.delta / 500
+          );
 
           this.camera.instance.position.copy(this.camCurrentPosition);
           this.camera.instance.lookAt(this.camCurrentPositionLookAt);
@@ -1299,11 +1354,11 @@ export default class World {
           else if (this.playIdleAnimation && this.astronaut) {
             this.camCurrentPosition.lerp(
               this.camIdlePosition.getWorldPosition(this.emptyVec3),
-              0.03
+              this.time.delta / 500
             );
             this.camCurrentPositionLookAt.lerp(
               this.astronautBody.position,
-              0.03
+              this.time.delta / 500
             );
             // Camera movement
             this.camera.instance.position.copy(this.camCurrentPosition);
@@ -1367,11 +1422,17 @@ export default class World {
 
       // Camera auto follow astronaut when it is in the high sky
       if (this.astronautBody.position.distanceTo(this.origin) > 20) {
-        this.camCurrentPosition.lerp(this.camNewPosition, 1);
-        this.camCurrentPositionLookAt.lerp(this.camNewPositionLookAt, 1);
+        this.camCurrentPosition.lerp(this.camNewPosition, this.time.delta / 16);
+        this.camCurrentPositionLookAt.lerp(
+          this.camNewPositionLookAt,
+          this.time.delta / 16
+        );
         this.camera.instance.position.copy(this.camCurrentPosition);
         this.camera.instance.lookAt(this.camCurrentPositionLookAt);
       }
+
+      // Update help page location
+      this.updateHelpPageLocation();
     }
 
     /**
@@ -1392,6 +1453,9 @@ export default class World {
       this.pressedF &&
       this.projectsIndicator.children[0].material.opacity > 0
     ) {
+      // Update help page location
+      this.updateHelpPageLocation();
+
       // Create raycaster alone current camera position and mouse position
       this.projectRaycaster.setFromCamera(this.mouse, this.camera.instance);
       const intersects = this.projectRaycaster.intersectObjects(
@@ -1455,7 +1519,7 @@ export default class World {
       // Move camera focus on the shelf if player at the shelf and pressed F
       this.camera.instance.position.lerp(
         this.shelfCamPosition.getWorldPosition(this.emptyVec3),
-        0.05
+        this.time.delta / 300
       );
       this.camera.instance.lookAt(this.shelfModel.position);
       this.camera.instance.up.copy(this.shelfYAxis);
@@ -1468,6 +1532,10 @@ export default class World {
      */
     // Trigger event when palyer is at UFO area and pressed F
     else if (this.astronautAtUFO && this.pressedF) {
+      // Update help page location
+      this.updateHelpPageLocation();
+
+      // Get each axis fdor ufo body
       this.ufoModel.matrix.extractBasis(
         this.ufoXAxis,
         this.ufoYAxis,
@@ -1476,7 +1544,7 @@ export default class World {
       // Move camera focus on the ufo if player at the ufo and pressed F
       this.camera.instance.position.lerp(
         this.ufoCamPosition.getWorldPosition(this.emptyVec3),
-        0.1
+        this.time.delta / 160
       );
       this.camera.instance.lookAt(
         this.ufoCamLookAtPosition.getWorldPosition(this.emptyVec3)
@@ -1568,10 +1636,13 @@ export default class World {
      */
     // Trigger event when palyer is at logo area and pressed F
     else if (this.astronautAtLogo && this.pressedF) {
+      // Update help page location
+      this.updateHelpPageLocation();
+
       // Move camera focus on the logo if player at the logo and pressed F
       this.camera.instance.position.lerp(
         this.logoCamPosition.getWorldPosition(this.emptyVec3),
-        0.02
+        this.time.delta / 800
       );
       this.logoCamLookAtPosition.set(
         this.logoMesh.position.x,
@@ -1644,7 +1715,10 @@ export default class World {
       this.astronautAtUFO === false
     ) {
       // move camera back to original position if player pressed F again
-      this.camera.instance.position.lerp(this.camCurrentPosition, 0.05);
+      this.camera.instance.position.lerp(
+        this.camCurrentPosition,
+        this.time.delta / 300
+      );
       this.camera.instance.lookAt(this.camCurrentPositionLookAt);
       this.camera.instance.up.copy(this.astronautGravityDirection.scale(-1));
       // Move back the project box when mouse is leaving

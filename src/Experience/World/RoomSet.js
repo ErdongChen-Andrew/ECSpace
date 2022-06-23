@@ -571,7 +571,7 @@ export default class RoomSet {
 
     // At camera viewing position box
     this.shelfCamPosition = new THREE.Mesh(
-      new THREE.BoxGeometry(0.1, 0.1, 0.1),
+      new THREE.BoxGeometry(0.01, 0.01, 0.01),
       new THREE.MeshBasicMaterial({
         transparent: true,
         opacity: 0,
