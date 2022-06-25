@@ -545,9 +545,10 @@ export default class World {
     this.playerPlate = new THREE.Mesh(
       new THREE.PlaneGeometry(1.5, 1.5),
       new THREE.MeshBasicMaterial({
-        color: 0x333333,
+        // color: 0x333333,
         transparent: true,
-        alphaMap: this.shadowMap,
+        // alphaMap: this.shadowMap,
+        opacity: 0,
       })
     );
     this.playerPlate.position.y = this.planetRadius + 0.05;
@@ -1258,8 +1259,8 @@ export default class World {
       );
 
       // Fadeout astronaut shadow according to it's jump height
-      this.playerPlate.material.opacity =
-        1 - (this.astronautToOrigin - this.planetRadius) * 0.3;
+      // this.playerPlate.material.opacity =
+      //   1 - (this.astronautToOrigin - this.planetRadius) * 0.3;
 
       // Update jump up axis
       this.upAxis.copy(this.astronautGravityDirection.scale(-1));
@@ -1542,7 +1543,7 @@ export default class World {
       this.camera.instance.lookAt(this.shelfModel.position);
       this.camera.instance.up.copy(this.shelfYAxis);
       // Hide astronaut shadow
-      this.playerPlate.material.opacity = 0;
+      // this.playerPlate.material.opacity = 0;
     }
 
     /**
@@ -1560,9 +1561,9 @@ export default class World {
         this.ufoZAxis
       );
       // Move camera focus on the ufo if player at the ufo and pressed F
-      this.camera.instance.position.lerp(
-        this.ufoCamPosition.getWorldPosition(this.emptyVec3),
-        this.time.delta / 160
+      this.camera.instance.position.copy(
+        this.ufoCamPosition.getWorldPosition(this.emptyVec3)
+        // this.time.delta / 160
       );
       this.camera.instance.lookAt(
         this.ufoCamLookAtPosition.getWorldPosition(this.emptyVec3)
@@ -1573,7 +1574,7 @@ export default class World {
         this.ufoIndicator.children[0].material.opacity -= 0.1;
       }
       // Hide astronaut shadow
-      this.playerPlate.material.opacity = 0;
+      // this.playerPlate.material.opacity = 0;
       // Move astronaut body to the top of UFO
       this.astronautBody.position.copy(
         this.ufoCamLookAtPosition.getWorldPosition(this.emptyVec3)
