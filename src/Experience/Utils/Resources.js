@@ -13,6 +13,7 @@ export default class Resource extends EventEmitter {
     this.items = {};
     this.toLoad = this.sources.length;
     this.loaded = 0;
+    this.loadingProgress = document.querySelector("#loadingProgress");
 
     this.setLoaders();
     this.startLoading();
@@ -20,20 +21,9 @@ export default class Resource extends EventEmitter {
 
   setLoaders() {
     this.loaders = {};
-    this.loaders.loadingManager = new THREE.LoadingManager(
-      // Loaded
-      ()=>{
-        console.log("loaded");
-      },
-
-      // Progress
-      (itemUrl, itemsLoaded, itemsTotal)=>{
-        console.log(Math.round(itemsLoaded / itemsTotal*100));
-      }
-    )
-    this.loaders.gltfLoader = new GLTFLoader(this.loaders.loadingManager);
-    this.loaders.textureLoader = new THREE.TextureLoader(this.loaders.loadingManager);
-    this.loaders.cubeTextureLoader = new THREE.CubeTextureLoader(this.loaders.loadingManager);
+    this.loaders.gltfLoader = new GLTFLoader();
+    this.loaders.textureLoader = new THREE.TextureLoader();
+    this.loaders.cubeTextureLoader = new THREE.CubeTextureLoader();
   }
 
   startLoading() {
@@ -41,15 +31,15 @@ export default class Resource extends EventEmitter {
     for (const source of this.sources) {
       if (source.type === "gltfModel") {
         this.loaders.gltfLoader.load(source.path, (file) => {
-          this.sourceLoaded(source,file);
+          this.sourceLoaded(source, file);
         });
       } else if (source.type === "texture") {
         this.loaders.textureLoader.load(source.path, (file) => {
-          this.sourceLoaded(source,file);
+          this.sourceLoaded(source, file);
         });
       } else if (source.type === "cubeTexture") {
         this.loaders.cubeTextureLoader.load(source.path, (file) => {
-          this.sourceLoaded(source,file);
+          this.sourceLoaded(source, file);
         });
       }
     }
@@ -58,7 +48,13 @@ export default class Resource extends EventEmitter {
   sourceLoaded(source, file) {
     this.items[source.name] = file;
     this.loaded++;
+
+    // Get loading progress %
+    this.loadingProgress.innerHTML =
+      "Loading... " + Math.round((this.loaded / this.toLoad) * 100) + "%";
+
     if (this.loaded === this.toLoad) {
+      // Loading is ready
       this.trigger("ready");
     }
   }

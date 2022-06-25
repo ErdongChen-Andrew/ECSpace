@@ -6,11 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ECSpace</title>
     <link rel="icon" type="image/x-icon" href="../static/textures/faviconP1.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Concert+One&display=swap" rel="stylesheet">
 </head>
 
 <body>
     <canvas class="webgl"></canvas>
-    <img src="../static/textures/HelpButtom.png" alt="Help Buttom">
+    <img id="helpButtom" src="../static/textures/HelpButtom.png" alt="Help Buttom">
+    <img id="loadingImage" src="../static/textures/loadingImage.gif" alt="Loading Image">
+    <h1 id="loadingProgress">0%</h1>
 </body>
 
 </html>

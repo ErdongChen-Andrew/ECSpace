@@ -612,8 +612,16 @@ export default class World {
    * Setup camera initial position, and initial look at position
    */
   setCamera() {
-    this.camCurrentPosition.set(5, 18, 5);
-    this.camCurrentPositionLookAt.set(0, 17, 0);
+    // Initial position
+    this.camCurrentPosition.set(-0.7, 17.1, 0.6);
+    this.camCurrentPositionLookAt.set(0, 17.4, 0.2);
+
+    // Moving to position
+    setTimeout(() => {
+      gsap.to(this.camCurrentPosition, { x: -5, y: 18, z: 5, duration: 1 });
+      gsap.to(this.camCurrentPosition, { x: 5, y: 18, z: 5, duration: 1 });
+    }, 1500);
+
     this.camera.instance.position.copy(this.camCurrentPosition);
     this.camera.instance.lookAt(this.camCurrentPositionLookAt);
     this.scene.add(this.camera.instance);
@@ -872,13 +880,23 @@ export default class World {
     if (this.helpPage) {
       if (this.keyMap["KeyH"]) {
         gsap.to(this.helpPage.material, {
-          duration: 0.4,
+          duration: 0.5,
           opacity: 0.95,
+        });
+        gsap.to(this.helpPage.scale, {
+          duration: 0.5,
+          x: 1,
+          y: 0.7,
         });
       } else if (!this.keyMap["KeyH"]) {
         gsap.to(this.helpPage.material, {
-          duration: 0.4,
+          duration: 0.5,
           opacity: 0,
+        });
+        gsap.to(this.helpPage.scale, {
+          duration: 0.5,
+          x: 0.7,
+          y: 0.5,
         });
       }
     }
@@ -1421,7 +1439,7 @@ export default class World {
       this.camera.instance.up.copy(this.astronautGravityDirection.scale(-1));
 
       // Camera auto follow astronaut when it is in the high sky
-      if (this.astronautBody.position.distanceTo(this.origin) > 20) {
+      if (this.astronautBody.position.distanceTo(this.origin) > 22) {
         this.camCurrentPosition.lerp(this.camNewPosition, this.time.delta / 16);
         this.camCurrentPositionLookAt.lerp(
           this.camNewPositionLookAt,

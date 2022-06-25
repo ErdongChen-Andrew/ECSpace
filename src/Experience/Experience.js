@@ -3,11 +3,11 @@ import Sizes from "./Utils/Sizes";
 import Time from "./Utils/Time";
 import Camera from "./Camera";
 import Renderer from "./Renderer";
+import LoadingOverlay from "./World/LoadingOverlay";
 import World from "./World/World";
 import Resource from "./Utils/Resources";
 import Debug from "./Utils/Debug";
 import sources from "./sources.js";
-import Planet from "./World/Planet";
 
 let instance = null;
 
@@ -31,6 +31,7 @@ export default class Experience {
     this.scene = new THREE.Scene();
     this.resources = new Resource(sources);
     this.camera = new Camera();
+    this.loadingOverlay = new LoadingOverlay();
     this.world = new World();
     this.renderer = new Renderer();
 

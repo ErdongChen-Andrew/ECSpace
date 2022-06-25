@@ -15,12 +15,34 @@ body {
   outline: none;
 }
 
-img {
+#helpButtom {
   position: absolute;
   height: 1.8rem;
   left: 50%;
   transform: translate(-50%);
-  bottom: 1rem
+  bottom: 1rem;
+  opacity: 0;
+}
+
+#loadingImage {
+  position: absolute;
+  height: 60%;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+}
+
+#loadingProgress {
+  position: absolute;
+  color: #b1dfff;
+  font-size: 3rem;
+  line-height: 3.5rem;
+  text-align: center;
+  font-family: "Concert One", cursive;
+  left: 50%;
+  top: 80%;
+  transform: translate(-50%, -50%);
 }
 
 
