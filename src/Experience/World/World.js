@@ -295,7 +295,6 @@ export default class World {
         opacity: 0.5,
       });
       this.indicatorModel.children[0].material = this.indicatorMaterial;
-      // this.indicatorModel.children[0].renderOrder = 0.5;
 
       // Logo indicator setups
       this.logoIndicator = this.indicatorModel.clone();

@@ -43,12 +43,13 @@ export default class LoadingOverlay {
       gsap.to("#loadingImage", { duration: 1, opacity: 0 });
       gsap.to("#loadingProgress", { duration: 1, opacity: 0 });
       gsap.to(this.overlay.material.uniforms.uAlpha, {
-        duration: 1.2,
+        duration: 1.3,
         value: 0,
       });
       setTimeout(() => {
         gsap.to("#helpButtom", { duration: 1.5, opacity: 1 });
-      }, 1000);
+        this.scene.remove(this.overlay);
+      }, 1300);
     });
   }
 }
