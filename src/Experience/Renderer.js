@@ -50,6 +50,8 @@ export default class Renderer {
 
     // Selecte what needs to be shown on TV
     this.resources.on("ready", () => {
+      // Set renderer color back to black
+      this.instance.setClearColor(0x000000);
       this.scene.clone().children.forEach((item) => {
         if (item instanceof THREE.Points) {
           allNeededObjects.push(item);
