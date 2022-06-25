@@ -32,6 +32,7 @@ export default class Renderer {
     this.instance.outputEncoding = THREE.sRGBEncoding;
     this.instance.toneMapping = THREE.LinearToneMapping;
     this.instance.toneMappingExposure = 1.2;
+    this.instance.setClearColor(0x3b3b3b);
 
     // Render scene on to TV screen
     this.tvScreenRender = new THREE.WebGLRenderTarget(

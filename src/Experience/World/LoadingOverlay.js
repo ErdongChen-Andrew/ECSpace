@@ -13,7 +13,7 @@ export default class LoadingOverlay {
      * Overlay setups
      */
     const overlayGeometry = new THREE.PlaneGeometry(2, 2, 1, 1);
-    this.overlayMaterial = new THREE.ShaderMaterial({
+    const overlayMaterial = new THREE.ShaderMaterial({
       transparent: true,
       uniforms: {
         uAlpha: { value: 100 },
@@ -33,10 +33,9 @@ export default class LoadingOverlay {
             }
         `,
     });
-    this.overlay = new THREE.Mesh(overlayGeometry, this.overlayMaterial);
-    this.overlayUp = new THREE.Mesh(overlayGeometry, this.overlayMaterial);
-    this.overlayUp.position.y = 17;
-    this.scene.add(this.overlay, this.overlayUp);
+    this.overlay = new THREE.Mesh(overlayGeometry, overlayMaterial);
+    this.overlay.position.y = 17;
+    this.scene.add(this.overlay);
 
     /**
      * Setups after resources are loaded
@@ -44,13 +43,13 @@ export default class LoadingOverlay {
     this.resources.on("ready", () => {
       gsap.to("#loadingImage", { duration: 0.8, opacity: 0 });
       gsap.to("#loadingProgress", { duration: 0.8, opacity: 0 });
-      gsap.to(this.overlayMaterial.uniforms.uAlpha, {
+      gsap.to(this.overlay.material.uniforms.uAlpha, {
         duration: 1,
         value: 0,
       });
       setTimeout(() => {
         gsap.to("#helpButtom", { duration: 1.5, opacity: 1 });
-        this.scene.remove(this.overlay, this.overlayUp);
+        this.scene.remove(this.overlay);
       }, 1500);
     });
   }
