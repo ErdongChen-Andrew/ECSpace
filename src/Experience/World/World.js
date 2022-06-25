@@ -24,6 +24,7 @@ export default class World {
     this.emptyVec3 = new THREE.Vector3();
     this.emptyCannonVec3 = new CANNON.Vec3();
     this.origin = new THREE.Vector3(0, 0, 0);
+    this.loadingProgress = document.querySelector("#loadingProgress");
 
     // Player controls pre-setups
     this.playerGroupXAxis = new THREE.Vector3();
@@ -406,7 +407,7 @@ export default class World {
       this.setAstronautPhysics();
       this.setPlayerControls();
       this.setIdleAnimationTimer();
-      this.setCamera();
+      this.setCamera(this.loadingProgress);
       this.setFog();
       this.setHelpPage();
 
@@ -610,7 +611,7 @@ export default class World {
   /**
    * Setup camera initial position, and initial look at position
    */
-  setCamera() {
+  setCamera(loadingProgress) {
     // Initial position
     this.camCurrentPosition.set(-0.7, 17.1, 0.6);
     this.camCurrentPositionLookAt.set(0, 17.4, 0.2);

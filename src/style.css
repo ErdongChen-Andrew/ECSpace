@@ -6,6 +6,7 @@
 html,
 body {
   overflow: hidden;
+  background-color: #3b3b3b;
 }
 
 .webgl {
@@ -39,7 +40,7 @@ body {
   font-size: 3rem;
   line-height: 3.5rem;
   text-align: center;
-  font-family: "Concert One", cursive;
+  font-family: "Concert One", Arial, Verdana, Helvetica, cursive;
   left: 50%;
   top: 80%;
   transform: translate(-50%, -50%);
