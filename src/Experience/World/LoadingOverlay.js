@@ -35,7 +35,7 @@ export default class LoadingOverlay {
         `,
     });
     this.overlay = new THREE.Mesh(overlayGeometry, overlayMaterial);
-    this.overlay.position.y = 17;
+    this.overlay.position.y = 18;
     this.scene.add(this.overlay);
 
     /**

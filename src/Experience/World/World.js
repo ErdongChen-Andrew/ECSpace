@@ -427,22 +427,33 @@ export default class World {
    */
   setBGMusic() {
     this.muted = true;
-    const listener = new THREE.AudioListener();
-    this.camera.instance.add(listener);
-    this.bgMusic = new THREE.Audio(listener);
-    this.audioLoader = new THREE.AudioLoader();
-    // Load background music source
-    this.audioLoader.load("/sound/slowmotion.mp3", (buffer) => {
-      this.bgMusic.setBuffer(buffer);
-      this.bgMusic.setLoop(true);
-      this.bgMusic.setVolume(0.1);
-    });
+    let listener = null;
+
     // Toggole mute and unmute music
     this.muteButtom.addEventListener("click", () => {
       if (this.muted) {
-        this.bgMusic.play();
-        this.muteButtom.src = unmuteIcon;
-        this.muted = false;
+        // Check if listener is already been created
+        if (!listener) {
+          // if no listener, create new one
+          listener = new THREE.AudioListener();
+          this.camera.instance.add(listener);
+          this.bgMusic = new THREE.Audio(listener);
+          this.audioLoader = new THREE.AudioLoader();
+          // Load background music source
+          this.audioLoader.load("/sound/slowmotion.mp3", (buffer) => {
+            this.bgMusic.setBuffer(buffer);
+            this.bgMusic.setLoop(true);
+            this.bgMusic.setVolume(0.1);
+            this.bgMusic.play();
+          });
+          this.muteButtom.src = unmuteIcon;
+          this.muted = false;
+        } else {
+          // If there is a listener, play the audio
+          this.bgMusic.play();
+          this.muteButtom.src = unmuteIcon;
+          this.muted = false;
+        }
       } else if (!this.muted) {
         this.bgMusic.pause();
         this.muteButtom.src = muteIcon;
