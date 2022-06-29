@@ -8,6 +8,7 @@ export default class LoadingOverlay {
     this.experience = new Experience();
     this.resources = this.experience.resources;
     this.scene = this.experience.scene;
+    this.loadingImage = document.querySelector("#loadingImage");
 
     /**
      * Overlay setups
@@ -49,7 +50,9 @@ export default class LoadingOverlay {
       });
       setTimeout(() => {
         gsap.to("#helpButtom", { duration: 1.5, opacity: 1 });
+        gsap.to("#muteButtom", { duration: 1.5, opacity: 1 });
         this.scene.remove(this.overlay);
+        this.loadingImage.remove();
       }, 1500);
     });
   }

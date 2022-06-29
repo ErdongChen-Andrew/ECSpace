@@ -25,6 +25,16 @@ body {
   opacity: 0;
 }
 
+#muteButtom {
+  position: absolute;
+  height: 1.5rem;
+  left: 50%;
+  transform: translate(-50%);
+  top: 1rem;
+  left: 96%;
+  opacity: 0;
+}
+
 #loadingImage {
   position: absolute;
   height: 60%;

@@ -10,6 +10,9 @@ import SoccerGame from "./SoccerGame";
 import RoomSet from "./RoomSet";
 import Logo from "./Logo";
 import ExplorerSet from "./ExplorerSet";
+// import sources from "../sources";
+import muteIcon from "../../../static/textures/muteIcon.png";
+import unmuteIcon from "../../../static/textures/unmuteIcon.png";
 
 export default class World {
   constructor() {
@@ -25,6 +28,7 @@ export default class World {
     this.emptyCannonVec3 = new CANNON.Vec3();
     this.origin = new THREE.Vector3(0, 0, 0);
     this.loadingProgress = document.querySelector("#loadingProgress");
+    this.muteButtom = document.querySelector("#muteButtom");
 
     // Player controls pre-setups
     this.playerGroupXAxis = new THREE.Vector3();
@@ -403,6 +407,7 @@ export default class World {
       this.projectRaycaster = new THREE.Raycaster();
       this.iconRaycaster = new THREE.Raycaster();
 
+      this.setBGMusic();
       this.logoIndicatorSetup();
       this.setAstronautPhysics();
       this.setPlayerControls();
@@ -414,6 +419,35 @@ export default class World {
       this.shelfTriggerEvent();
       this.ufoTriggerEvent();
       this.logoTriggerEvent();
+    });
+  }
+
+  /**
+   * Background music setups
+   */
+  setBGMusic() {
+    this.muted = true;
+    const listener = new THREE.AudioListener();
+    this.camera.instance.add(listener);
+    this.bgMusic = new THREE.Audio(listener);
+    this.audioLoader = new THREE.AudioLoader();
+    // Load background music source
+    this.audioLoader.load("/sound/slowmotion.mp3", (buffer) => {
+      this.bgMusic.setBuffer(buffer);
+      this.bgMusic.setLoop(true);
+      this.bgMusic.setVolume(0.1);
+    });
+    // Toggole mute and unmute music
+    this.muteButtom.addEventListener("click", () => {
+      if (this.muted) {
+        this.bgMusic.play();
+        this.muteButtom.src = unmuteIcon;
+        this.muted = false;
+      } else if (!this.muted) {
+        this.bgMusic.pause();
+        this.muteButtom.src = muteIcon;
+        this.muted = true;
+      }
     });
   }
 
