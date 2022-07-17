@@ -687,6 +687,8 @@ export default class World {
    * Set up help page
    */
   setHelpPage() {
+    this.helpButton = document.querySelector("#helpButtom");
+    this.helpButtonIsTouched = false;
     const helpPageTexture = this.resources.items.helpPageTexture;
     helpPageTexture.encoding = THREE.sRGBEncoding;
     helpPageTexture.generateMipmaps = false;
@@ -703,6 +705,14 @@ export default class World {
     this.helpPage = new THREE.Sprite(helpPageMaterial);
     this.helpPage.scale.set(1, 0.7);
     this.scene.add(this.helpPage);
+
+    // Detect if help button is been touched
+    this.helpButton.addEventListener("touchstart", () => {
+      this.helpButtonIsTouched = true;
+    });
+    this.helpButton.addEventListener("touchend", () => {
+      this.helpButtonIsTouched = false;
+    });
   }
   // Update help page location
   updateHelpPageLocation() {
@@ -924,7 +934,7 @@ export default class World {
 
     // Access help page
     if (this.helpPage) {
-      if (this.keyMap["KeyH"]) {
+      if (this.keyMap["KeyH"] || this.helpButtonIsTouched) {
         gsap.to(this.helpPage.material, {
           duration: 0.5,
           opacity: 0.95,
@@ -934,7 +944,7 @@ export default class World {
           x: 1,
           y: 0.7,
         });
-      } else if (!this.keyMap["KeyH"]) {
+      } else if (!this.keyMap["KeyH"] && !this.helpButtonIsTouched) {
         gsap.to(this.helpPage.material, {
           duration: 0.5,
           opacity: 0,
