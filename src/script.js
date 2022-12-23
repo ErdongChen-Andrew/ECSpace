@@ -6,6 +6,10 @@ import Experience from "./Experience/Experience";
 // import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 const canvas = document.querySelector("canvas.webgl");
-const experience = new Experience(canvas)
+const experience = new Experience(canvas);
 
-
+if (window.innerWidth < window.innerHeight) {
+  alert(
+    "Please rotate your device 🔄.\n**Note: this page requires a keyboard to control."
+  );
+}

@@ -1606,9 +1606,6 @@ export default class World {
      */
     // Trigger event when palyer is at UFO area and pressed F
     else if (this.astronautAtUFO && this.pressedF) {
-      // Update help page location
-      this.updateHelpPageLocation();
-
       // Get each axis fdor ufo body
       this.ufoModel.matrix.extractBasis(
         this.ufoXAxis,
@@ -1628,6 +1625,8 @@ export default class World {
       if (this.ufoIndicator.children[0].material.opacity > 0) {
         this.ufoIndicator.children[0].material.opacity -= 0.1;
       }
+      // Update help page location
+      this.updateHelpPageLocation();
       // Hide astronaut shadow
       // this.playerPlate.material.opacity = 0;
       // Move astronaut body to the top of UFO

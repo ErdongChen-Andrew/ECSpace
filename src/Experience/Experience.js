@@ -45,9 +45,9 @@ export default class Experience {
       this.update();
     });
 
-    // Creater
-    this.creater =
-      "Creater: Erdong Chen (Andrew) @ Richmond, British Columbia, Canada";
+    // Creator
+    this.creator =
+      "Creator: Erdong Chen (Andrew) @ Richmond, British Columbia, Canada. Contact info: erdong1993@gmail.com";
   }
 
   resize() {
