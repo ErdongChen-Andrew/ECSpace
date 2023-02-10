@@ -346,7 +346,7 @@ export default class World {
             case "projectPic":
             case "chrome":
               window
-                .open("https://threejs-space-tourism.herokuapp.com/", "_blank")
+                .open("https://threejs-space-tourism.onrender.com/", "_blank")
                 .focus();
               break;
             case "projectPic001":
