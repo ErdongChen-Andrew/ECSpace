@@ -481,4 +481,9 @@ export default [
     type: "texture",
     path: "/textures/HelpPage.png",
   },
+  {
+    name: "boarderMap",
+    type: "texture",
+    path: "/alphaMap/netAlpha.jpeg",
+  },
 ];

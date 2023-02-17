@@ -3,6 +3,7 @@ import * as CANNON from "cannon-es";
 import Experience from "../Experience";
 import dustVertex from "../Shaders/dustVertex";
 import dustFragment from "../Shaders/dustFragment";
+import gsap from "gsap";
 
 export default class Planet {
   constructor(defaultMaterial, physicsWorld) {
@@ -40,6 +41,7 @@ export default class Planet {
     this.setMiniPlanet();
 
     // Air walls physics
+    this.setBoarder()
     this.setBoarderPhysics()
   }
 
@@ -184,6 +186,62 @@ export default class Planet {
     }
   }
 
+  setBoarder() {
+    // Set up boarder material
+    this.boarderMaterial = new THREE.MeshBasicMaterial();
+    this.boarderTexture = this.resources.items.boarderMap;
+    this.boarderTexture.repeat = new THREE.Vector2(50, 50);
+    this.boarderTexture.wrapS = THREE.RepeatWrapping;
+    this.boarderTexture.wrapT = THREE.RepeatWrapping;
+    this.boarderTexture.minFilter = THREE.NearestFilter;
+    this.boarderTexture.generateMipmaps = false;
+    this.boarderMaterial.alphaMap = this.boarderTexture;
+    // this.boarderMaterial.side = THREE.DoubleSide;
+    this.boarderMaterial.transparent = true;
+    this.boarderMaterial.opacity = 0
+    
+    // Set up boarder geometry
+    this.boarderGeometry = new THREE.PlaneGeometry(300, 300)
+
+    // Boarder mesh 1
+    this.boarderMesh1 = new THREE.Mesh(
+      this.boarderGeometry,
+      this.boarderMaterial
+    );
+    this.boarderMesh1.position.z = -150
+    // Boarder mesh 2
+    this.boarderMesh2 = new THREE.Mesh(
+      this.boarderGeometry,
+      this.boarderMaterial
+    );
+    this.boarderMesh2.rotateX(Math.PI/2)
+    this.boarderMesh2.position.y = 150
+    // Boarder mesh 3
+    this.boarderMesh3 = new THREE.Mesh(
+      this.boarderGeometry,
+      this.boarderMaterial
+    );
+    this.boarderMesh3.rotateY(Math.PI/2)
+    this.boarderMesh3.position.x = -150
+    // Boarder mesh 4
+    this.boarderMesh4 = this.boarderMesh1.clone()
+    this.boarderMesh4.rotateY(Math.PI)
+    this.boarderMesh4.position.z = 150
+    // Boarder mesh 5
+    this.boarderMesh5 = this.boarderMesh2.clone()
+    this.boarderMesh5.rotateY(Math.PI)
+    this.boarderMesh5.position.y = -150
+    // Boarder mesh 6
+    this.boarderMesh6 = this.boarderMesh3.clone()
+    this.boarderMesh6.rotateY(Math.PI)
+    this.boarderMesh6.position.x = 150
+
+    const boarderGroup = new THREE.Group()
+    boarderGroup.add(this.boarderMesh1, this.boarderMesh2, this.boarderMesh3, this.boarderMesh4, this.boarderMesh5, this.boarderMesh6)
+    this.scene.add(boarderGroup);
+  }
+
+
   /**
    * Physics setup
    */
@@ -259,5 +317,22 @@ export default class Planet {
       item.rotation.y = ((elapsedTime / 10) * item.position.x) / 100;
       item.rotation.z = ((elapsedTime / 10) * item.position.y) / 100;
     });
+
+    /**
+     * Show / hide boarder
+     */
+    // Get player position
+    const playerPosition = this.experience.world.astronautBody.position
+    if (playerPosition.x > 140 || playerPosition.y > 140 || playerPosition.z > 140) {
+      gsap.to(this.boarderMaterial, {
+        duration: 1.5,
+        opacity: 0.8,
+      });
+    } else {
+      gsap.to(this.boarderMaterial, {
+        duration: 1.5,
+        opacity: 0,
+      });
+    }
   }
 }
