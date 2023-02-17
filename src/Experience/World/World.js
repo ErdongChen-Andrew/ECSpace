@@ -703,7 +703,7 @@ export default class World {
       opacity: 0,
     });
     this.helpPage = new THREE.Sprite(helpPageMaterial);
-    this.helpPage.scale.set(1, 0.7);
+    this.helpPage.scale.set(1.3, 0.66);
     this.scene.add(this.helpPage);
 
     // Detect if help button is been touched
@@ -941,8 +941,8 @@ export default class World {
         });
         gsap.to(this.helpPage.scale, {
           duration: 0.5,
-          x: 1,
-          y: 0.7,
+          x: 1.3,
+          y: 0.66,
         });
       } else if (!this.keyMap["KeyH"] && !this.helpButtonIsTouched) {
         gsap.to(this.helpPage.material, {
@@ -951,8 +951,8 @@ export default class World {
         });
         gsap.to(this.helpPage.scale, {
           duration: 0.5,
-          x: 0.7,
-          y: 0.5,
+          x: 0.8,
+          y: 0.4,
         });
       }
     }
