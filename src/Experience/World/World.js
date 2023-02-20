@@ -1351,7 +1351,7 @@ export default class World {
 
       // Moving forward
       if (!this.pressedF) {
-        if (this.keyMap["KeyW"]) {
+        if (this.keyMap["KeyW"] || this.keyMap["ArrowUp"]) {
           if (this.astronautBody.velocity.length() > 3.5) {
             this.astronautBody.velocity.copy(this.astronautBody.velocity);
           } else {
@@ -1374,27 +1374,27 @@ export default class World {
           }
         }
         // Moving backward
-        if (this.keyMap["KeyS"]) {
+        if (this.keyMap["KeyS"] || this.keyMap["ArrowDown"]) {
           if (this.astronautBody.velocity.length() > 1.75) {
             this.astronautBody.velocity.copy(this.astronautBody.velocity);
           } else {
             this.astronautBody.velocity.copy(this.backVelocityAndDir);
           }
-          if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
+          if (!this.keyMap["Space"] && !this.keyMap["KeyW"] && !this.keyMap["ArrowUp"]) {
             this.astronaut.animation.play("walk");
           }
         }
         // Turning left
-        if (this.keyMap["KeyA"]) {
+        if (this.keyMap["KeyA"] || this.keyMap["ArrowLeft"]) {
           this.playerGroup.rotateOnAxis(this.turnAxis, this.walkRad * 6);
-          if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
+          if (!this.keyMap["Space"] && !this.keyMap["KeyW"] && !this.keyMap["ArrowUp"]) {
             this.astronaut.animation.play("walk");
           }
         }
         // Turning right
-        if (this.keyMap["KeyD"]) {
+        if (this.keyMap["KeyD"] || this.keyMap["ArrowRight"]) {
           this.playerGroup.rotateOnAxis(this.turnAxis, -this.walkRad * 6);
-          if (!this.keyMap["Space"] && !this.keyMap["KeyW"]) {
+          if (!this.keyMap["Space"] && !this.keyMap["KeyW"] && !this.keyMap["ArrowUp"]) {
             this.astronaut.animation.play("walk");
           }
         }
@@ -1419,6 +1419,10 @@ export default class World {
           !this.keyMap["KeyS"] &&
           !this.keyMap["KeyA"] &&
           !this.keyMap["KeyD"] &&
+          !this.keyMap["ArrowUp"] &&
+          !this.keyMap["ArrowDown"] &&
+          !this.keyMap["ArrowLeft"] &&
+          !this.keyMap["ArrowRight"] &&
           !this.keyMap["Space"]
         ) {
           if (!this.playIdleAnimation && this.astronaut) {
